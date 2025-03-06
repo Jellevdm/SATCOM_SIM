@@ -1,23 +1,35 @@
 [inputs_design]
-# Is not entirely correct for atmospheric_loss as L of 1e6 is not the same as path trough atmosphere, I forced it to be -3 dB (atmospheric_loss)
 Tx_power = 10e-3                                                    # Transmit laser power (W)
 theta_div = 10.0e-6                                                 # Beam divergence angle (radians)
 sigma_pj = 2e-6                                                     # Pointing jitter (radians)
 optics_array = [0.125, 0.95, 0.96, 0.5, 0.96, 0.96, 0.95]           # Optical efficiency array
-Dr = 1e-3                           # Receiver diameter (m)
-wave = 1.56e-6                      # Wavelength (m)
-V = 50                              # Visibility (km)
-L = 50                              # Distance Tx to Rx (m)
-temp = 20                           # Temperature (Celsius)
-r = 5e-4                            # Static pointing error radius (m)
-p_out = 1e-2                        # Scintillation outage probability
-sigma_i = 0.45                      # Scintillation index
-r0 = 0.02                           # Fried parameter (m)
-eta_rx = 0.7                        # Receiver efficiency
-Rx_treshold = 1e-6                  # Receiver threshold power (W)
-n_nom = 0.8                         # Nominal coupling efficiency
-attenuator = -10                    # Attenuator loss (dB)
-link = "down"                       # "up" for uplink, "down" for downlink
+Dr = 1e-3                                                           # Receiver diameter (m)
+wave = 1.56e-6                                                      # Wavelength (m)
+V = 50                                                              # Visibility (km)
+L = 50                                                              # Distance Tx to Rx (m)
+temp = 20                                                           # Temperature (Celsius)
+r = 5e-4                                                            # Static pointing error radius (m)
+p_out = 1e-2                                                        # Scintillation outage probability
+sigma_i = 0.45                                                      # Scintillation index
+r0 = 0.02                                                           # Fried parameter (m)
+eta_rx = 0.7                                                        # Receiver efficiency
+Rx_treshold = 1e-6                                                  # Receiver threshold power (W)
+n_nom = 0.8                                                         # Nominal coupling efficiency
+attenuator = -10                                                    # Attenuator loss (dB)
+link = "down"                                                       # "up" for uplink, "down" for downlink
+
+[inputs_signal]
+random = false                                                      # Switch: if False, use seed 0
+R_f = 100                                                           # Frequency ratio: ratio between transmitter frequency and random frequency (visual)
+bitrate = 25                                                        # Transmitted bits per second [-]
+t_end = 2                                                           # Signal duration [s]
+fs = 3e14
+fc = 1e14
+n = 1                                                               # Air refractive index [-]
+p_0 = 0.1                                                           # Outage probability [-]
+
+#snr = 5                                                            # Signal-to-noise ratio [dB]
+#L_c = 0.5                                                          # Constant Loss
 
 [losses_design]
 optics_loss = true
@@ -29,7 +41,6 @@ scintillation_loss = false
 beam_spread_loss = false
 wavefront_error_loss = false
 attenuator_loss = true
-
 
 
 
