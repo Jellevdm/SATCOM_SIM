@@ -20,11 +20,11 @@ link = "down"                                                       # "up" for u
 
 [inputs_signal]
 random = false                                                      # Switch: if False, use seed 0
-R_f = 100                                                           # Frequency ratio: ratio between transmitter frequency and random frequency (visual)
+R_f = 10                                                            # Frequency ratio: ratio between transmitter frequency and random frequency (visual)
 bitrate = 25                                                        # Transmitted bits per second [-]
 t_end = 2                                                           # Signal duration [s]
-fs = 3e14
-fc = 1e14
+fs = 1e7
+fc = 1e6
 n = 1                                                               # Air refractive index [-]
 p_0 = 0.1                                                           # Outage probability [-]
 
