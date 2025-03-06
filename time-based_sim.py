@@ -9,30 +9,34 @@ import tomllib as tom
 from link_budget_funcs import OpticalLinkBudget
 
 # Configure toml file and initialise link budget
+#-----------------------------------------------
 config_path = "config.toml"
 with open(config_path, 'rb') as f:  # 'rb' mode is required for tomllib
     config = tom.load(f)  # Use tomllib to load the file
 
-# optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")  # Initialise optical link budget class for lecture example
+optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")  # Initialise optical link budget class for lecture example
 optical_link_design = OpticalLinkBudget(config, "inputs_design", "losses_design")  # Initialise optical link budget class for our design
+#-----------------------------------------------
 
-# # Results of link budget
-# print(f'Lecture example:')
-# link_budget = optical_link_lect.compute_link_budget()
-# for key in link_budget.keys():
-#     print(f"{key}: {link_budget[key]:.4f}")
+# Results of link budget
+#-----------------------------------------------
+print(f'Lecture example:')
+link_budget_lec = optical_link_lect.compute_link_budget()
+for key in link_budget_lec.keys():
+    print(f"{key}: {link_budget_lec[key]:.4f}")
 
 print(f'---------------------------------')
 
 print(f'Design example:')
-link_budget = optical_link_design.compute_link_budget()
-for key in link_budget.keys():
-    print(f"{key}: {link_budget[key]:.4f}")
+link_budget_des = optical_link_design.compute_link_budget()
+for key in link_budget_des.keys():
+    print(f"{key}: {link_budget_des[key]:.4f}")
+#-----------------------------------------------
 
 # TODO: Fix the connection with link budget (Same input values)
 # TODO: Fix the SNR calculation
 # TODO: Fix correction noise addition
-from link_budget import OpticalLinkBudget as lb
+
 #TODO: Clean up files - create input, function and simulation file
 
 #####=- Functions -=#####
@@ -106,10 +110,10 @@ def gen_awgn(signal, snr_db):
 
 ###--- Simulation Input ---####
 random = False  # Switch: if False, use seed 0
-R_f = 10 # Frequency ratio: ratio between transmitter frequency and random frequency (visual)
+R_f = 500 # Frequency ratio: ratio between transmitter frequency and random frequency (visual)
 
 # PRBS
-bitrate = 10  # Transmitted bits per second [-]
+bitrate = 50  # Transmitted bits per second [-]
 t_end = 1  # Signal duration [s]
 
 # Transmitter
@@ -129,37 +133,8 @@ p_0 = 0.1  # Outage probability [-]
 snr = 5  # Signal-to-noise ratio [dB]
 L_c = 0.5
 
-# Link budget calculation
-optical_link = lb(
-    Tx_power=80e-3,  # Laser transmitter power (W)
-    T_atmos=0.5,  # Atmospheric transmission factor
-    theta_div=10e-6,  # Beam divergence angle (radians)
-    sigma_pj=2e-6,  # Pointing jitter (radians)
-    # Modulator, L1, M1, BS1, M3, BS1, M2, BS2, M4, L3
-    optics_array=[0.125, 0.95, 0.96, 0.5, 0.96, 0.96, 0.95],  # Optical efficiency (7 steps)
-    Dr=3e-3,  # 3 cm receiver aperture
-    wave=1.55e-6,  # Wavelength
-    L=50,  # Distance
-    temp=20,  # Temperature in Celsius
-    r=2e-5,  # Static pointing error radius, based on div
-    p_out=0.01,  # Scintillation outage probability
-    sigma_i=0.45,  # Scintillation index
-    r0=0.02,  # Fried parameter
-    eta_rx=0.7,  # Receiver efficiency
-    Rx_treshold=1e-6,
-    n_nom=0.8,
-    omit=True,
-    attenuator=-10  # receiver attenuation in dB
-)
-
-# print(f'Our design example: with assumptions on efficiency and atmospheric losses for up or downlink')
-# link_budget = optical_link.compute_link_budget()
-# for key in link_budget.keys():
-#     print(f"{key}: {link_budget[key]:.4f}")
-
 # Losses
-L_c = 10 ** ((link_budget["Total losses [dB]"] - link_budget[
-    "Pointing jitter loss [dB]"]) / 10)  # Constant loss: all link budget losses except for (jitter-induced) scintillation [dB]
+L_c = 10 ** ((link_budget_des["Total losses [dB]"] - link_budget_des["Pointing jitter loss [dB]"]) / 10)  # Constant loss: all link budget losses except for (jitter-induced) scintillation [dB]
 print(L_c)
 
 #####=- Calculations -=#####
@@ -187,15 +162,15 @@ awgn = gen_awgn(tx_signal_loss, snr)
 rx_signal = (tx_signal_loss + awgn)
 
 # Apply on-off keying
-rx_mean = []
-for i in range(0, len(tx_signal), R_f):
-   rx_mean.append(np.mean(rx_signal[i:(i + R_f)]))
+# rx_mean = []
+# for i in range(0, len(tx_signal), R_f):
+#    rx_mean.append(np.mean(rx_signal[i:(i + R_f)]))
 
-threshold = np.mean(rx_mean)
-rx_bits = (rx_mean > threshold).astype(int)
-bit_errors = np.sum(tx_bits != rx_bits)
-BER = bit_errors / n_bits
-print("BER: " + str(BER))
+# threshold = np.mean(rx_mean)
+# rx_bits = (rx_mean > threshold).astype(int)
+# bit_errors = np.sum(tx_bits != rx_bits)
+# BER = bit_errors / n_bits
+# print("BER: " + str(BER))
 
 threshold = np.mean(rx_signal[::R_f])
 rx_bits = (rx_signal[::R_f] > threshold).astype(int)
