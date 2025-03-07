@@ -1,6 +1,6 @@
-\\ Input tables like inputs_design shall have the exact format. 
-\\ Furthermore each variable shall have a value
-\\ The code not yet supports empty variables
+# Input tables like inputs_design shall have the exact format. 
+# Furthermore each variable shall have a value
+# The code not yet supports empty variables
 
 [inputs_design]
 Tx_power = 10e-3                                                    # Transmit laser power (W)

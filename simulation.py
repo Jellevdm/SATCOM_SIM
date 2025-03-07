@@ -1,6 +1,5 @@
 # Import needed packages
 from os import link
-from blinker import Signal
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as signal
