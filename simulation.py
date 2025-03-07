@@ -14,6 +14,8 @@ config_path = "config.toml"
 with open(config_path, 'rb') as f:          # 'rb' mode is required for tomllib
     config = tom.load(f)                    # Use tomllib to load the file
 
+# Load a specific input file
+#------
 optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")           # Initialise optical link budget class for lecture example
 optical_link_design = OpticalLinkBudget(config, "inputs_design", "losses_design")   # Initialise optical link budget class for our design                   
 #-----------------------------------------------
@@ -44,7 +46,7 @@ result_sim = signal_sim.generate_time_sig()                                     
 # TODO: Fix the connection with link budget (Same input values)
 # TODO: Fix the SNR calculation
 # TODO: Fix correction noise addition
-# TODO: Clean up files - create input, function and simulation file
+# TODO: add beta distribution?
 
 
 
