@@ -44,7 +44,7 @@ result_sim = signal_sim.generate_time_sig()                                     
 # TODO: Fix the connection with link budget (Same input values)
 # TODO: Fix the SNR calculation
 # TODO: Fix correction noise addition
-# TODO: Clean up files - create input, function and simulation file
+
 
 
 
