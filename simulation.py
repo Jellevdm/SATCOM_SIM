@@ -1,6 +1,5 @@
 # Import needed packages
 from os import link
-from blinker import Signal
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as signal
@@ -14,6 +13,8 @@ config_path = "config.toml"
 with open(config_path, 'rb') as f:          # 'rb' mode is required for tomllib
     config = tom.load(f)                    # Use tomllib to load the file
 
+# Load a specific input file
+#------
 optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")           # Initialise optical link budget class for lecture example
 optical_link_design = OpticalLinkBudget(config, "inputs_design", "losses_design")   # Initialise optical link budget class for our design                   
 #-----------------------------------------------

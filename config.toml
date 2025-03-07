@@ -1,3 +1,7 @@
+# Input tables like inputs_design shall have the exact format. 
+# Furthermore each variable shall have a value
+# The code not yet supports empty variables
+
 [inputs_design]
 Tx_power = 10e-3                                                    # Transmit laser power (W)
 theta_div = 10.0e-6                                                 # Beam divergence angle (radians)
@@ -24,7 +28,7 @@ R_f = 10                                                            # Frequency 
 bitrate = 25                                                        # Transmitted bits per second [-]
 t_end = 2                                                           # Signal duration [s]
 fs = 1e7
-fc = 1e6
+fc = 1e5
 n = 1                                                               # Air refractive index [-]
 p_0 = 0.1                                                           # Outage probability [-]
 

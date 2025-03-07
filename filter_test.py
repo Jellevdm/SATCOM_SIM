@@ -4,7 +4,7 @@ import scipy.signal as signal
 
 # Sampling frequency and cutoff frequency
 fs = 1e7  # Hz
-fc = 1e5   # Hz (Cutoff frequency)
+fc = 1e6   # Hz (Cutoff frequency)
 
 def sample_xy(std, la, len, seed):
         np.random.seed(seed)
@@ -63,6 +63,7 @@ plt.plot(frequencies, 20 * np.log10(abs(array_f[3])), 'b')  # Convert magnitude 
 plt.axvline(fc, color='r', linestyle='--', label=f'Cutoff Frequency ({fc} Hz)')
 plt.xlabel("Frequency [Hz]")
 plt.ylabel("Magnitude [dB]")
+plt.xscale('log')
 plt.title("Frequency Response of Butterworth Filter")
 plt.legend()
 plt.grid()
