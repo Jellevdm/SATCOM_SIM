@@ -28,7 +28,7 @@ R_f = 10                                                            # Frequency 
 bitrate = 25                                                        # Transmitted bits per second [-]
 t_end = 2                                                           # Signal duration [s]
 fs = 1e7
-fc = 1e6
+fc = 1e5
 n = 1                                                               # Air refractive index [-]
 p_0 = 0.1                                                           # Outage probability [-]
 

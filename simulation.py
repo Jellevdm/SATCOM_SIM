@@ -46,6 +46,6 @@ result_sim = signal_sim.generate_time_sig()                                     
 # TODO: Fix the SNR calculation
 # TODO: Fix correction noise addition
 # TODO: add beta distribution?
-
+# TODO: maby normalize the power in the plots?
 
 
