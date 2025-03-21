@@ -40,14 +40,14 @@ def intensity_function(x_f, y_f, lam, theta_div, n, z):
 sigma_pj = 2e-3 #pointing jitter
 la = 50      # link length
 t_end = 10  #time to simulate
-t = np.linspace(0, t_end, 1000)  
+t = np.linspace(0, t_end, 10000)  
 
 #noise
 array = sample_xy(sigma_pj, la, len(t), 0)
 x = array[0]
 y = array[1]
-print(x)
-print(y)
+# print(x)
+# print(y)
 
 #filtered noise
 array_f = butt_filt(fs, fc, x, y)
@@ -71,7 +71,7 @@ plt.grid()
 plt.tight_layout()
 plt.show()
 
-# Subplot 1: Time Domain Signal
+# Subplot 1: Time Domain Signal x
 plt.subplot(2, 1, 1)
 plt.plot(t, x, label='Original Signal')
 plt.plot(t, x_f, label='Filtered Signal', linewidth=2)
@@ -81,7 +81,7 @@ plt.ylabel("Amplitude - x")
 plt.title("Time Domain: Original vs. Filtered Signal")
 plt.grid()
 
-# Subplot 2: Frequency Response
+# Subplot 2: Time domain signal y
 plt.subplot(2, 1, 2)
 plt.plot(t, y, label='Original Signal')
 plt.plot(t, y_f, label='Filtered Signal', linewidth=2)
@@ -92,16 +92,23 @@ plt.title("Time Domain: Original vs. Filtered Signal")
 plt.grid()
 plt.show()
 
+plt.figure(figsize=(8, 6))
 
+# Plot original and filtered trajectories
+plt.plot(x, y, label="Original Path", alpha=0.6)
+plt.plot(x_f, y_f, label="Filtered Path", linestyle="--", linewidth=2)
 
+# Mark start and end points
+plt.scatter(x[0], y[0], color='g', label="Start", marker='o', s=100)
+plt.scatter(x[-1], y[-1], color='r', label="End", marker='x', s=100)
 
-
-
-
-
-
-
-
+plt.xlabel("X Position")
+plt.ylabel("Y Position")
+plt.title("Trajectory of x-y Coordinates Over Time")
+plt.legend()
+plt.grid()
+plt.axis("equal")  # Ensures equal scaling of x and y axes
+plt.show()
 
 # # Normalize frequency
 # Wn = fc / (fs / 2)  # Normalize by Nyquist frequency
