@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 
 # Sampling frequency and cutoff frequency
-fs = 1e7  # Hz
-fc = 1e6   # Hz (Cutoff frequency)
+fs = 1000  # Hz
+fc = 100   # Hz (Cutoff frequency)
 
 def sample_xy(std, la, len, seed):
         np.random.seed(seed)
