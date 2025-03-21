@@ -12,7 +12,11 @@ class OpticalLinkBudget:
 
         # Read input parameters
         inputs = self.config[input_name]
-        self.Tx_power = inputs["Tx_power"]
+        if inputs["dB_att"]:
+            self.Tx_power = inputs["Tx_power"] * 0.1
+        else:
+            self.Tx_power = inputs["Tx_power"]
+        
         self.theta_div = inputs["theta_div"]
         self.sigma_pj = inputs["sigma_pj"]
         self.optics_array = inputs["optics_array"]
@@ -121,13 +125,6 @@ class OpticalLinkBudget:
         P_rx_db = P_tx_db + total_losses
         P_rx = (10 ** (P_rx_db / 10)) / 1000
 
-        # sigma2_thermal = 1.38e-23 * (273.15 + self.temp) / 50  # Thermal noise
-        # I_d = P_rx / (1.6e-19 * 0.99)  # Assume quantum efficiency of 0.99
-        # sigma2_shot = 2 * 1.6e-19 * I_d  # Shot noise
-        # sigma2 = sigma2_thermal + sigma2_shot  # Total noise power
-        # snr = P_rx /sigma2
-        # snr_db = 10 * np.log10(snr)
-
         return {
             "Transmit laser power [dBm]": P_tx_db,
             "Tx Antenna gain [dB]": Gtx,
@@ -146,7 +143,6 @@ class OpticalLinkBudget:
             "Total losses [dB]": total_losses,
             "Link margin [dB]": link_margin,
             "Rx treshold [dBm]": Rx_treshold_db,
-            # "SNR (dB)": snr_db,
         }
 
 # Simulating optical signal

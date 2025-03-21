@@ -4,13 +4,14 @@
 
 [inputs_design]
 Tx_power = 10e-3                                                    # Transmit laser power (W)
+dB_att = true                                                       # 10 dB attenuator added before the modulator true=yes, false=no
 theta_div = 10.0e-6                                                 # Beam divergence angle (radians)
 sigma_pj = 2e-6                                                     # Pointing jitter (radians)
 optics_array = [0.125, 0.95, 0.96, 0.5, 0.96, 0.96, 0.95]           # Optical efficiency array
-Dr = 1e-3                                                           # Receiver diameter (m)
-wave = 1.56e-6                                                      # Wavelength (m)
+Dr = 2e-4                                                           # Receiver diameter (m)
+wave = 1.55e-6                                                      # Wavelength (m)
 V = 50                                                              # Visibility (km)
-L = 50                                                              # Distance Tx to Rx (m)
+L = 1.39                                                            # Distance Tx to Rx (m)
 temp = 20                                                           # Temperature (Celsius)
 r = 5e-4                                                            # Static pointing error radius (m)
 p_out = 1e-2                                                        # Scintillation outage probability
@@ -39,45 +40,9 @@ p_0 = 0.1                                                           # Outage pro
 optics_loss = true
 free_space_loss = true
 atmospheric_loss = true
-static_pointing_loss = true
-jitter_loss = true
+static_pointing_loss = false
+jitter_loss = false
 scintillation_loss = false
 beam_spread_loss = false
 wavefront_error_loss = false
-attenuator_loss = true
-
-
-
-
-
-[inputs_lec]
-# Is not entirely correct for atmospheric_loss as L of 1e6 is not the same as path trough atmosphere, I forced it to be -3 dB (atmospheric_loss)
-Tx_power = 1.0                      # Transmit laser power (W)
-theta_div = 20.0e-6                 # Beam divergence angle (radians)
-sigma_pj = 1e-6                     # Pointing jitter (radians)
-optics_array = [0.5, 0.6]           # Optical efficiency array
-Dr = 0.5                            # Receiver diameter (m)
-wave = 1.55e-6                      # Wavelength (m)
-V = 1074.98                         # Visibility (km)
-L = 1e6                          # Distance Tx to Rx (m)
-temp = 20                           # Temperature (Celsius)
-r = 10                              # Static pointing error radius (m)
-p_out = 1e-3                        # Scintillation outage probability
-sigma_i = 0.447                     # Scintillation index
-r0 = 0.2                            # Fried parameter (m)
-eta_rx = 1.0                        # Receiver efficiency
-Rx_treshold = 1e-6                  # Receiver threshold power (W)
-n_nom = 0.8                         # Nominal coupling efficiency
-attenuator = 0                      # Attenuator loss (dB)
-link = "down"                       # "up" for uplink, "down" for downlink
-
-[losses_lec]
-optics_loss = true
-free_space_loss = true
-atmospheric_loss = true
-static_pointing_loss = true
-jitter_loss = true
-scintillation_loss = true
-beam_spread_loss = true
-wavefront_error_loss = true
 attenuator_loss = true
