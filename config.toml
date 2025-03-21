@@ -4,16 +4,17 @@
 
 [inputs_design]
 Tx_power = 10e-3                                                    # Transmit laser power (W)
-dB_att = true                                                       # 10 dB attenuator added before the modulator true=yes, false=no
-theta_div = 10.0e-6                                                 # Beam divergence angle (radians)
-sigma_pj = 2e-6                                                     # Pointing jitter (radians)
-optics_array = [0.125, 0.95, 0.96, 0.5, 0.96, 0.96, 0.95]           # Optical efficiency array
+theta_div = 11.97e-3                                                # Beam divergence angle (radians)
+sigma_pj = 2.394e-3                                                 # Pointing jitter (radians)
+optics_array = [0.9983, 0.4467, 0.9247, 
+                0.9247, 0.9486, 0.9486, 
+                0.3949, 0.3949, 0.9486]                             # Optical efficiency array
 Dr = 2e-4                                                           # Receiver diameter (m)
 wave = 1.55e-6                                                      # Wavelength (m)
 V = 50                                                              # Visibility (km)
 L = 1.39                                                            # Distance Tx to Rx (m)
 temp = 20                                                           # Temperature (Celsius)
-r = 5e-4                                                            # Static pointing error radius (m)
+r = 1.5e-3                                                            # Static pointing error radius (m)
 p_out = 1e-2                                                        # Scintillation outage probability
 sigma_i = 0.45                                                      # Scintillation index
 r0 = 0.02                                                           # Fried parameter (m)
