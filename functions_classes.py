@@ -12,11 +12,7 @@ class OpticalLinkBudget:
 
         # Read input parameters
         inputs = self.config[input_name]
-        if inputs["dB_att"]:
-            self.Tx_power = inputs["Tx_power"] * 0.1
-        else:
-            self.Tx_power = inputs["Tx_power"]
-        
+        self.Tx_power = inputs["Tx_power"]
         self.theta_div = inputs["theta_div"]
         self.sigma_pj = inputs["sigma_pj"]
         self.optics_array = inputs["optics_array"]
@@ -245,9 +241,9 @@ class Signal_simulation:
         # Losses
 
         array = self.sample_xy(self.sigma_pj, self.z, len(t))
-        print(array)
+        
         array_f = self.butt_filt(self.fs, self.fc, array[0], array[1])
-        print(array_f)
+        
         L_pj = self.intensity_function(array_f[0], array_f[1], self.lam, self.theta_div, self.n, self.z)
         L_tot = self.db_2_lin(self.L_c) * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal
