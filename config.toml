@@ -4,7 +4,7 @@
 
 [inputs_design]
 Tx_power = 10e-3                                                    # Transmit laser power (W)
-theta_div = 11.97e-3                                                # Beam divergence angle (radians)
+theta_div = 16.45e-5                                                # Beam divergence angle (radians)
 sigma_pj = 2.394e-3                                                 # Pointing jitter (radians)
 optics_array = [0.9983, 0.4467, 0.9247, 
                 0.9247, 0.9486, 0.9486, 
