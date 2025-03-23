@@ -143,7 +143,7 @@ class OpticalLinkBudget:
 
 # Simulating optical signal
 class Signal_simulation:
-    def __init__(self, config, inputs_link, inputs_signal, L_c, snr):
+    def __init__(self, config, inputs_link, inputs_signal, L_c):
         self.config = config
         link = self.config[inputs_link]
         signal = self.config[inputs_signal]
@@ -155,7 +155,7 @@ class Signal_simulation:
         self.lam = link["wave"]
         self.theta_div = link["theta_div"]
         self.L_c = L_c
-        self.snr = snr 
+        self.snr = signal["snr"] 
 
         # Read signal input parameters
         self.random = signal["random"]

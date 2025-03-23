@@ -28,14 +28,11 @@ for key in link_budget_des.keys():
 
 # Results of time simulation
 #-----------------------------------------------
-snr = 5
 L_c = 10 ** ((link_budget_des["Total losses [dB]"] - link_budget_des["Pointing jitter loss [dB]"]) / 10)  # Constant loss: all link budget losses except for (jitter-induced) scintillation [dB]
 
-signal_sim = Signal_simulation(config, "inputs_design", "inputs_signal", L_c, snr)     # Initialse time signal simulation class    
+signal_sim = Signal_simulation(config, "inputs_design", "inputs_signal", L_c)     # Initialse time signal simulation class    
 result_sim = signal_sim.generate_time_sig()                                            # Run the function for generating time signal at Tx and Rx
 
-# TODO: Fix the connection with link budget (Same input values)
-# TODO: Fix the SNR calculation
 # TODO: Fix correction noise addition
 
 

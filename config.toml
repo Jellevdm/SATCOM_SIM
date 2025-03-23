@@ -33,8 +33,8 @@ fs = 1000
 fc = 100
 n = 1                                                               # Air refractive index [-]
 p_0 = 0.1                                                           # Outage probability [-]
+snr = 5                                                             # Signal-to-noise ratio [dB]
 
-#snr = 5                                                            # Signal-to-noise ratio [dB]
 #L_c = 0.5                                                          # Constant Loss
 
 [losses_design]
