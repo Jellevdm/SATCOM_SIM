@@ -20,6 +20,7 @@ fsmPort = None
 plot_length = 500  # Number of points to display in the plot (adjust as needed)
 data_queue_x = queue.Queue()
 data_queue_y = queue.Queue()
+combined_data_queue = queue.Queue()  # Queue to store combined (X, Y) data
 
 # Function to send data to DAC
 def sendDAC(d, channel, mode):
@@ -111,6 +112,11 @@ def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
             queue.put((global_time_y, sine_value))
 
         sine_value = max(0, min(0xFFFF, sine_value))  # Ensure sine_value is within DAC range
+
+        # If both X and Y are running, we store both in the combined_data_queue
+        if running_x and running_y:
+            combined_data_queue.put((global_time_x, sine_value))  # Store the combined data for both X and Y
+
         time.sleep(0.01)  # Update rate: 10 ms
 
 # Functions to start and stop sine waves for X and Y axes
@@ -143,6 +149,8 @@ time_data_x = deque(maxlen=plot_length)
 sine_data_x = deque(maxlen=plot_length)
 time_data_y = deque(maxlen=plot_length)
 sine_data_y = deque(maxlen=plot_length)
+time_data_combined = deque(maxlen=plot_length)  # Time for the combined plot
+combined_data = deque(maxlen=plot_length)  # Combined X vs Y data
 
 # Function to update the plot (use global_time for continuous time tracking)
 def update_plot():
@@ -155,6 +163,13 @@ def update_plot():
         current_time, sine_value = data_queue_y.get()
         time_data_y.append(current_time)
         sine_data_y.append(sine_value)
+
+    # If both X and Y are running, we add data to the combined graph
+    if running_x and running_y:
+        while not combined_data_queue.empty():
+            x_value, y_value = combined_data_queue.get()
+            time_data_combined.append(x_value)
+            combined_data.append(y_value)
 
     # Update individual X and Y sine wave plots
     ax[0].clear()
@@ -173,6 +188,15 @@ def update_plot():
     ax[1].set_ylim(0, 0xFFFF)
     ax[1].legend()
 
+    # Update combined plot (Y vs X)
+    if running_x and running_y:
+        ax[2].clear()
+        ax[2].plot(time_data_combined, combined_data, 'g-', label="Y vs X")
+        ax[2].set_title("Y vs X")
+        ax[2].set_xlabel('X (time)')
+        ax[2].set_ylabel('Y (amplitude)')
+        ax[2].legend()
+
     # Redraw the figure
     canvas.draw()
 
@@ -184,7 +208,7 @@ def draw_figure(canvas_elem, fig):
     return figure_canvas_agg
 
 # Create the Matplotlib figure with subplots
-fig, ax = plt.subplots(2, 1, figsize=(8, 10))  # Only two subplots: one for X and one for Y
+fig, ax = plt.subplots(3, 1, figsize=(8, 12))  # Three subplots: X, Y, and Y vs X
 
 # Draw the Matplotlib figure in the Canvas element
 canvas = draw_figure(window['-CANVAS-'], fig)
