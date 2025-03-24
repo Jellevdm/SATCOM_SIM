@@ -65,12 +65,14 @@ def generate_jitter_amp(mean, std):
 def generate_jitter_freq(low, high):
     return np.random.uniform(low, high)
 
-# Track global time (in seconds)
-global_time = 0
+# Track time for x and y independently
+global_time_x = 0
+global_time_y = 0
 
 # Function to generate sine wave with jitter and send data
-def sine_wave_with_jitter(channel, base_freq, base_amp, running_flag, queue):
-    global global_time  # Use the global time for continuous tracking
+def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
+    global global_time_x, global_time_y
+
     offset = 0x7FFF
     jitter_interval = 2  # Jitter every 2 seconds
     prev_freq = base_freq
@@ -81,28 +83,34 @@ def sine_wave_with_jitter(channel, base_freq, base_amp, running_flag, queue):
     jittered_phase = np.random.uniform(0, 2 * np.pi)
 
     while running_flag():
-        # Apply jitter every 'jitter_interval' seconds
-        if (global_time % jitter_interval) < 0.01:  # Update jitter parameters roughly every jitter_interval seconds
-            jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-            jittered_amp = base_amp * generate_jitter_amp(0.8, 1.2)
-            jittered_phase = np.random.uniform(0, 2 * np.pi)
-            prev_freq = jittered_freq  # Update the previous frequency
+        # Apply jitter every 'jitter_interval' seconds independently for X and Y
+        if channel == 0:  # X Channel
+            if (global_time_x % jitter_interval) < 0.01:  # Update jitter parameters roughly every jitter_interval seconds
+                jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
+                jittered_amp = base_amp * generate_jitter_amp(0.8, 1.2)
+                jittered_phase = np.random.uniform(0, 2 * np.pi)
+                prev_freq = jittered_freq  # Update the previous frequency for X
 
-        amplitude = int(0x3FFF + (0x3FFF * jittered_amp))
+            amplitude = int(0x3FFF + (0x3FFF * jittered_amp))
+            sine_value = int(offset + amplitude * np.sin(2 * np.pi * jittered_freq * global_time_x + jittered_phase))
+            global_time_x += 0.01  # Increment the X time
+            sendDAC(sine_value, 0, 1)  # Send data for X channel
+            queue.put((global_time_x, sine_value))
+        
+        elif channel == 1:  # Y Channel
+            if (global_time_y % jitter_interval) < 0.01:  # Update jitter parameters roughly every jitter_interval seconds
+                jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
+                jittered_amp = base_amp * generate_jitter_amp(0.8, 1.2)
+                jittered_phase = np.random.uniform(0, 2 * np.pi)
+                prev_freq = jittered_freq  # Update the previous frequency for Y
 
-        # Calculate the sine wave value based on continuous time
-        sine_value = int(offset + amplitude * np.sin(2 * np.pi * jittered_freq * global_time + jittered_phase))
+            amplitude = int(0x3FFF + (0x3FFF * jittered_amp))
+            sine_value = int(offset + amplitude * np.sin(2 * np.pi * jittered_freq * global_time_y + jittered_phase))
+            global_time_y += 0.01  # Increment the Y time
+            sendDAC(sine_value, 1, 1)  # Send data for Y channel
+            queue.put((global_time_y, sine_value))
+
         sine_value = max(0, min(0xFFFF, sine_value))  # Ensure sine_value is within DAC range
-
-        # Send data to DAC
-        sendDAC(sine_value, channel, 1)
-
-        # Store data for plotting
-        queue.put((global_time, sine_value))  # Use global_time for continuous time tracking
-
-        # Increment global time continuously
-        global_time += 0.01  # You can adjust this increment based on your update rate
-
         time.sleep(0.01)  # Update rate: 10 ms
 
 # Functions to start and stop sine waves for X and Y axes
@@ -112,7 +120,7 @@ def start_sine_x():
         running_x = True
         base_freq_x = float(values['freq_x'])  # Get frequency from GUI
         base_amp_x = float(values['amp_x'])    # Get amplitude from GUI
-        threading.Thread(target=sine_wave_with_jitter, args=(0, base_freq_x, base_amp_x, lambda: running_x, data_queue_x), daemon=True).start()
+        threading.Thread(target=sine_wave_with_jitter, args=(base_freq_x, base_amp_x, lambda: running_x, data_queue_x, 0), daemon=True).start()
 
 def stop_sine_x():
     global running_x
@@ -124,7 +132,7 @@ def start_sine_y():
         running_y = True
         base_freq_y = float(values['freq_y'])  # Get frequency from GUI
         base_amp_y = float(values['amp_y'])    # Get amplitude from GUI
-        threading.Thread(target=sine_wave_with_jitter, args=(1, base_freq_y, base_amp_y, lambda: running_y, data_queue_y), daemon=True).start()
+        threading.Thread(target=sine_wave_with_jitter, args=(base_freq_y, base_amp_y, lambda: running_y, data_queue_y, 1), daemon=True).start()
 
 def stop_sine_y():
     global running_y
@@ -152,12 +160,16 @@ def update_plot():
     ax[0].clear()
     ax[0].plot(time_data_x, sine_data_x, 'r-', label="X Sine Wave")
     ax[0].set_title("X Sine Wave")
+    ax[0].set_xlabel(f'Running time')
+    ax[0].set_ylabel(f'DAC value')
     ax[0].set_ylim(0, 0xFFFF)
     ax[0].legend()
 
     ax[1].clear()
     ax[1].plot(time_data_y, sine_data_y, 'b-', label="Y Sine Wave")
     ax[1].set_title("Y Sine Wave")
+    ax[1].set_xlabel(f'Running time')
+    ax[1].set_ylabel(f'DAC value')
     ax[1].set_ylim(0, 0xFFFF)
     ax[1].legend()
 
