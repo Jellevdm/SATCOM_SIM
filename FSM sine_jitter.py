@@ -75,7 +75,7 @@ def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
     global global_time_x, global_time_y
 
     offset = 0x7FFF
-    jitter_interval = 10  # Jitter every ... seconds
+    jitter_interval = 3  # Jitter every ... seconds
     prev_freq = base_freq
 
     # Initial jitter parameters
