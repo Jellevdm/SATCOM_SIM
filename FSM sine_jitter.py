@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from collections import deque
 import queue
+import csv
 
 # Decrease this to make the FSM movement smoother
 update_time = 0.0005
@@ -21,6 +22,19 @@ plot_length = 500  # Number of points to display in the plot (adjust as needed)
 data_queue_x = queue.Queue()
 data_queue_y = queue.Queue()
 combined_data_queue = queue.Queue()  # Queue to store combined (X, Y) data
+
+import csv
+
+# Open files for logging data
+x_log_file = open("sine_x_data.csv", "w", newline="")
+y_log_file = open("sine_y_data.csv", "w", newline="")
+
+x_writer = csv.writer(x_log_file)
+y_writer = csv.writer(y_log_file)
+
+# Write headers
+x_writer.writerow(["Time", "Value"])
+y_writer.writerow(["Time", "Value"])
 
 # Function to send data to DAC
 def sendDAC(d, channel, mode):
@@ -39,6 +53,7 @@ sg.theme('DarkAmber')
 windowLayout = [
     [sg.Text('X Frequency (Hz):'), sg.InputText('1', key='freq_x', size=(5,1)), sg.Text('Amplitude:'), sg.InputText('1', key='amp_x', size=(5,1)), sg.Button('Start X Sine'), sg.Button('Stop X Sine')],
     [sg.Text('Y Frequency (Hz):'), sg.InputText('1', key='freq_y', size=(5,1)), sg.Text('Amplitude:'), sg.InputText('1', key='amp_y', size=(5,1)), sg.Button('Start Y Sine'), sg.Button('Stop Y Sine')],
+    [sg.Button('Start Both')], [sg.Button('Stop Both')],
     [sg.Canvas(key='-CANVAS-', size=(800, 600))]
 ]
 
@@ -74,46 +89,66 @@ global_time_y = 0
 def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
     global global_time_x, global_time_y
 
-    offset = 0x7FFF
+    # Define DAC limits
+    min_x1, min_x2 = 0x740D, 0x923D  # X limits (28900 - 37500)
+    min_y1, min_y2 = 0x70E4, 0x927C  # Y limits (29709 - 37437)
+
+    # Compute center and amplitude limits
+    offset_x = 0x84D0
+    max_amplitude_x = (min_x2 - min_x1) // 2  # Half-range amplitude for X
+
+    offset_y = 0x7FBC
+    max_amplitude_y = (min_y2 - min_y1) // 2  # Half-range amplitude for Y
+
     jitter_interval = 3  # Jitter every ... seconds
     prev_freq = base_freq
 
     # Initial jitter parameters
     jittered_freq = base_freq
     jittered_amp = base_amp
-    jittered_phase = np.random.uniform(0, 2 * np.pi)
+    # jittered_phase = np.random.uniform(0, 2 * np.pi)
 
     while running_flag():
-        # Apply jitter every 'jitter_interval' seconds independently for X and Y
         if channel == 0:  # X Channel
-            if (global_time_x % jitter_interval) < 0.01:  # Update jitter parameters roughly every jitter_interval seconds
+            if (global_time_x % jitter_interval) < 0.01:
                 jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jittered_amp = base_amp * generate_jitter_amp(0.8, 1.2)
-                jittered_phase = np.random.uniform(0, 2 * np.pi)
-                prev_freq = jittered_freq  # Update the previous frequency for X
+                jittered_amp = min((base_amp * generate_jitter_amp(0.8, 1.2)),0.9)
+                # jittered_phase = np.random.uniform(0, 2 * np.pi)
+                prev_freq = jittered_freq  
 
-            amplitude = int(0x3FFF + (0x3FFF * jittered_amp))
-            sine_value = int(offset + amplitude * np.sin(2 * np.pi * jittered_freq * global_time_x + jittered_phase))
-            global_time_x += 0.01  # Increment the X time
-            sendDAC(sine_value, 0, 1)  # Send data for X channel
+            # Ensure amplitude is within limits
+            amplitude_x = int(max_amplitude_x * jittered_amp)
+            sine_value = int(offset_x + amplitude_x * np.sin(2 * np.pi * jittered_freq * global_time_x))
+
+            # Constrain within DAC range
+            sine_value = max(min_x1, min(min_x2, sine_value))
+
+            global_time_x += 0.01
+            sendDAC(sine_value, 0, 1)
             queue.put((global_time_x, sine_value))
-        
+            x_writer.writerow([global_time_x, sine_value])  # Log X data
+
         elif channel == 1:  # Y Channel
-            if (global_time_y % jitter_interval) < 0.01:  # Update jitter parameters roughly every jitter_interval seconds
+            if (global_time_y % jitter_interval) < 0.01:
                 jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jittered_amp = base_amp * generate_jitter_amp(0.8, 1.2)
+                jittered_amp = min((base_amp * generate_jitter_amp(0.8, 1.2)),0.9)
                 jittered_phase = np.random.uniform(0, 2 * np.pi)
-                prev_freq = jittered_freq  # Update the previous frequency for Y
+                prev_freq = jittered_freq  
 
-            amplitude = int(0x3FFF + (0x3FFF * jittered_amp))
-            sine_value = int(offset + amplitude * np.sin(2 * np.pi * jittered_freq * global_time_y + jittered_phase))
-            global_time_y += 0.01  # Increment the Y time
-            sendDAC(sine_value, 1, 1)  # Send data for Y channel
+            # Ensure amplitude is within limits
+            amplitude_y = int(max_amplitude_y * jittered_amp)
+            sine_value = int(offset_y + amplitude_y * np.sin(2 * np.pi * jittered_freq * global_time_y))
+
+            # Constrain within DAC range
+            sine_value = max(min_y1, min(min_y2, sine_value))
+
+            global_time_y += 0.01
+            sendDAC(sine_value, 1, 1)
             queue.put((global_time_y, sine_value))
-
-        sine_value = max(0, min(0xFFFF, sine_value))  # Ensure sine_value is within DAC range
+            y_writer.writerow([global_time_y, sine_value])  # Log Y data
 
         time.sleep(0.01)  # Update rate: 10 ms
+
 
 # Functions to start and stop sine waves for X and Y axes
 def start_sine_x():
@@ -125,8 +160,9 @@ def start_sine_x():
         threading.Thread(target=sine_wave_with_jitter, args=(base_freq_x, base_amp_x, lambda: running_x, data_queue_x, 0), daemon=True).start()
 
 def stop_sine_x():
-    global running_x
+    global running_x, x_log_file
     running_x = False
+    x_log_file.close()  # Close file
 
 def start_sine_y():
     global running_y
@@ -137,8 +173,9 @@ def start_sine_y():
         threading.Thread(target=sine_wave_with_jitter, args=(base_freq_y, base_amp_y, lambda: running_y, data_queue_y, 1), daemon=True).start()
 
 def stop_sine_y():
-    global running_y
+    global running_y, y_log_file
     running_y = False
+    y_log_file.close()  # Close file
 
 # Matplotlib real-time plot setup
 time_data_x = deque(maxlen=plot_length)
@@ -164,7 +201,7 @@ def update_plot():
     ax[0].set_title("X Sine Wave")
     ax[0].set_xlabel(f'Running time')
     ax[0].set_ylabel(f'DAC value')
-    ax[0].set_ylim(0, 0xFFFF)
+    ax[0].set_ylim(0x740D, 0x923D)
     ax[0].legend()
 
     ax[1].clear()
@@ -172,7 +209,7 @@ def update_plot():
     ax[1].set_title("Y Sine Wave")
     ax[1].set_xlabel(f'Running time')
     ax[1].set_ylabel(f'DAC value')
-    ax[1].set_ylim(0, 0xFFFF)
+    ax[1].set_ylim(0x70E4, 0x927C)
     ax[1].legend()
 
     # Redraw the figure
@@ -208,7 +245,12 @@ while True:
         start_sine_y()
     if event == 'Stop Y Sine':
         stop_sine_y()
-
+    if event == 'Start Both':
+        start_sine_x()
+        start_sine_y()
+    if event == 'Stop Both':
+        stop_sine_x()
+        stop_sine_y()
 # Cleanup
 window.close()
 if fsmPort:
