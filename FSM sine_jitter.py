@@ -90,65 +90,56 @@ def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
     global global_time_x, global_time_y
 
     # Define DAC limits
-    min_x1, min_x2 = 0x740D, 0x923D  # X limits (28900 - 37500)
-    min_y1, min_y2 = 0x70E4, 0x927C  # Y limits (29709 - 37437)
+    min_x1, min_x2 = 0x740D, 0x923D  # X limits (29709 - 37437)
+    min_y1, min_y2 = 0x70E4, 0x927C  # Y limits (28900 - 37500)
 
     # Compute center and amplitude limits
     offset_x = 0x84D0
-    max_amplitude_x = (min_x2 - min_x1) // 2  # Half-range amplitude for X
+    max_amplitude_x = min((0x923D-0x84D0),(0x84D0-0x740D))  # Half-range amplitude for X
 
     offset_y = 0x7FBC
-    max_amplitude_y = (min_y2 - min_y1) // 2  # Half-range amplitude for Y
+    max_amplitude_y = min((0x927C-0x7FBC),(0x7FBC-0x70E4))  # Half-range amplitude for Y
 
     jitter_interval = 3  # Jitter every ... seconds
     prev_freq = base_freq
 
-    # Initial jitter parameters
-    jittered_freq = base_freq
-    jittered_amp = base_amp
-    # jittered_phase = np.random.uniform(0, 2 * np.pi)
+    # Start with exact base values (no jitter at first)
+    first_cycle = True  
 
     while running_flag():
         if channel == 0:  # X Channel
-            if (global_time_x % jitter_interval) < 0.01:
+            if first_cycle:  # First sine wave cycle uses exact base values
+                jittered_freq = base_freq
+                jittered_amp = base_amp
+                first_cycle = False  # Next cycle can use jitter
+            elif (global_time_x % jitter_interval) < 0.01:  # Apply jitter later
                 jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jittered_amp = min((base_amp * generate_jitter_amp(0.8, 1.2)),0.9)
-                # jittered_phase = np.random.uniform(0, 2 * np.pi)
+                jitter_scale = generate_jitter_amp(0.95, 1.05)  # Random factor
+                jittered_amp = max(0.1, min(base_amp * jitter_scale, 1.0))  
                 prev_freq = jittered_freq  
-
-            # Ensure amplitude is within limits
             amplitude_x = int(max_amplitude_x * jittered_amp)
             sine_value = int(offset_x + amplitude_x * np.sin(2 * np.pi * jittered_freq * global_time_x))
-
-            # Constrain within DAC range
-            sine_value = max(min_x1, min(min_x2, sine_value))
-
             global_time_x += 0.01
             sendDAC(sine_value, 0, 1)
             queue.put((global_time_x, sine_value))
-            x_writer.writerow([global_time_x, sine_value])  # Log X data
-
+            x_writer.writerow([global_time_x, sine_value])  
         elif channel == 1:  # Y Channel
-            if (global_time_y % jitter_interval) < 0.01:
+            if first_cycle:  
+                jittered_freq = base_freq
+                jittered_amp = base_amp
+                first_cycle = False  
+            elif (global_time_y % jitter_interval) < 0.01:  
                 jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jittered_amp = min((base_amp * generate_jitter_amp(0.8, 1.2)),0.9)
-                jittered_phase = np.random.uniform(0, 2 * np.pi)
+                jitter_scale = generate_jitter_amp(0.95, 1.05)  
+                jittered_amp = max(0.1, min(base_amp * jitter_scale, 1.0))  
                 prev_freq = jittered_freq  
-
-            # Ensure amplitude is within limits
             amplitude_y = int(max_amplitude_y * jittered_amp)
             sine_value = int(offset_y + amplitude_y * np.sin(2 * np.pi * jittered_freq * global_time_y))
-
-            # Constrain within DAC range
-            sine_value = max(min_y1, min(min_y2, sine_value))
-
             global_time_y += 0.01
             sendDAC(sine_value, 1, 1)
             queue.put((global_time_y, sine_value))
-            y_writer.writerow([global_time_y, sine_value])  # Log Y data
-
-        time.sleep(0.01)  # Update rate: 10 ms
-
+            y_writer.writerow([global_time_y, sine_value])  
+        time.sleep(0.01)  
 
 # Functions to start and stop sine waves for X and Y axes
 def start_sine_x():
