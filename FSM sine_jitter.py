@@ -114,8 +114,9 @@ def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
                 first_cycle = False  # Next cycle can use jitter
             elif (global_time_x % jitter_interval) < 0.01:  # Apply jitter later
                 jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jitter_scale = generate_jitter_amp(0.95, 1.05)  # Random factor
-                jittered_amp = max(0.1, min(base_amp * jitter_scale, 1.0))  
+                jitter_scale = generate_jitter_amp(1, 0.2)  # Random factor
+                jittered_amp = max(0.1, min(base_amp * jitter_scale, 1.0)) 
+                base_amp = jittered_amp 
                 prev_freq = jittered_freq  
             amplitude_x = int(max_amplitude_x * jittered_amp)
             sine_value = int(offset_x + amplitude_x * np.sin(2 * np.pi * jittered_freq * global_time_x))
@@ -130,7 +131,7 @@ def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
                 first_cycle = False  
             elif (global_time_y % jitter_interval) < 0.01:  
                 jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jitter_scale = generate_jitter_amp(0.95, 1.05)  
+                jitter_scale = generate_jitter_amp(1, 0.2)  
                 jittered_amp = max(0.1, min(base_amp * jitter_scale, 1.0))  
                 prev_freq = jittered_freq  
             amplitude_y = int(max_amplitude_y * jittered_amp)
