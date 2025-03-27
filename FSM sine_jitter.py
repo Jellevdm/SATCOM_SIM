@@ -95,52 +95,81 @@ def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
 
     # Compute center and amplitude limits
     offset_x = 0x84D0
-    max_amplitude_x = min((0x923D-0x84D0),(0x84D0-0x740D))  # Half-range amplitude for X
+    max_amplitude_x = min((min_x2 - offset_x), (offset_x - min_x1))  # Half-range amplitude for X
 
     offset_y = 0x7FBC
-    max_amplitude_y = min((0x927C-0x7FBC),(0x7FBC-0x70E4))  # Half-range amplitude for Y
+    max_amplitude_y = min((min_y2 - offset_y), (offset_y - min_y1))  # Half-range amplitude for Y
 
-    jitter_interval = 3  # Jitter every ... seconds
+    jitter_interval = 3  # Apply jitter every 3 seconds
     prev_freq = base_freq
+    prev_amp = base_amp
+
+    # **Phase accumulators for continuous sine wave generation**
+    global_phase_x = 0
+    global_phase_y = 0
+
+    # Time step (sampling period)
+    dt = 0.01  # 10 ms per iteration
 
     # Start with exact base values (no jitter at first)
-    first_cycle = True  
+    first_cycle = True
 
     while running_flag():
         if channel == 0:  # X Channel
             if first_cycle:  # First sine wave cycle uses exact base values
                 jittered_freq = base_freq
                 jittered_amp = base_amp
-                first_cycle = False  # Next cycle can use jitter
-            elif (global_time_x % jitter_interval) < 0.01:  # Apply jitter later
-                jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jitter_scale = generate_jitter_amp(1, 0.2)  # Random factor
-                jittered_amp = max(0.1, min(base_amp * jitter_scale, 1.0)) 
-                base_amp = jittered_amp 
-                prev_freq = jittered_freq  
-            amplitude_x = int(max_amplitude_x * jittered_amp)
-            sine_value = int(offset_x + amplitude_x * np.sin(2 * np.pi * jittered_freq * global_time_x))
-            global_time_x += 0.01
+                first_cycle = False
+            elif (global_time_x % jitter_interval) < dt:  # Apply jitter at intervals
+                new_jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
+                jitter_scale = generate_jitter_amp(1, 0.2)  # Random factor for amplitude
+                new_jittered_amp = max(0.1, min(prev_amp * jitter_scale, 1.0)) 
+
+                # **Correct the phase to avoid discontinuity**
+                phase_correction = (prev_freq - new_jittered_freq) * dt * 2 * np.pi
+                global_phase_x -= phase_correction  # Adjust phase smoothly
+
+                prev_freq = new_jittered_freq  
+                prev_amp = new_jittered_amp  
+
+            amplitude_x = int(max_amplitude_x * prev_amp)
+            sine_value = int(offset_x + amplitude_x * np.sin(global_phase_x))
+
+            global_time_x += dt
+            global_phase_x += 2 * np.pi * prev_freq * dt  # **Smooth phase update**
+
             sendDAC(sine_value, 0, 1)
             queue.put((global_time_x, sine_value))
-            x_writer.writerow([global_time_x, sine_value])  
+            x_writer.writerow([global_time_x, sine_value])
+
         elif channel == 1:  # Y Channel
-            if first_cycle:  
+            if first_cycle:
                 jittered_freq = base_freq
                 jittered_amp = base_amp
-                first_cycle = False  
-            elif (global_time_y % jitter_interval) < 0.01:  
-                jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jitter_scale = generate_jitter_amp(1, 0.2)  
-                jittered_amp = max(0.1, min(base_amp * jitter_scale, 1.0))  
-                prev_freq = jittered_freq  
-            amplitude_y = int(max_amplitude_y * jittered_amp)
-            sine_value = int(offset_y + amplitude_y * np.sin(2 * np.pi * jittered_freq * global_time_y))
-            global_time_y += 0.01
+                first_cycle = False
+            elif (global_time_y % jitter_interval) < dt:
+                new_jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
+                jitter_scale = generate_jitter_amp(1, 0.2)
+                new_jittered_amp = max(0.1, min(prev_amp * jitter_scale, 1.0))
+
+                # **Phase correction to avoid sudden jumps**
+                phase_correction = (prev_freq - new_jittered_freq) * dt * 2 * np.pi
+                global_phase_y -= phase_correction
+
+                prev_freq = new_jittered_freq  
+                prev_amp = new_jittered_amp  
+
+            amplitude_y = int(max_amplitude_y * prev_amp)
+            sine_value = int(offset_y + amplitude_y * np.sin(global_phase_y))
+
+            global_time_y += dt
+            global_phase_y += 2 * np.pi * prev_freq * dt  # **Smooth phase update**
+
             sendDAC(sine_value, 1, 1)
             queue.put((global_time_y, sine_value))
-            y_writer.writerow([global_time_y, sine_value])  
-        time.sleep(0.01)  
+            y_writer.writerow([global_time_y, sine_value])
+
+        time.sleep(dt)  # Maintain update rate
 
 # Functions to start and stop sine waves for X and Y axes
 def start_sine_x():
