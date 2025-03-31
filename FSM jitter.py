@@ -21,13 +21,10 @@ fsmPort = None
 plot_length = 500  # Number of points to display in the plot (adjust as needed)
 data_queue_x = queue.Queue()
 data_queue_y = queue.Queue()
-combined_data_queue = queue.Queue()  # Queue to store combined (X, Y) data
-
-import csv
 
 # Open files for logging data
-x_log_file = open("sine_x_data.csv", "w", newline="")
-y_log_file = open("sine_y_data.csv", "w", newline="")
+x_log_file = open("noise_x_data.csv", "w", newline="")
+y_log_file = open("noise_y_data.csv", "w", newline="")
 
 x_writer = csv.writer(x_log_file)
 y_writer = csv.writer(y_log_file)
@@ -86,29 +83,25 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
     min_y1, min_y2 = 0x70E4, 0x927C  # Y limits (28900 - 37500)
 
     # Detector center
-    offset_x = 0x84D0
-    max_amplitude_x = (min_x2 - min_x1) // 2  # Half-range amplitude for X
-
-    offset_y = 0x7FBC
+    offset_x = 0x84D0                # Offset Gregoire and I have determined early on
+    offset_y = 0x7FBC                # Offset Gregoire and I have determined early on
 
     # Maximum Amplitude Ranges
-    max_amp_x = min((min_x2-offset_x), (offset_x-min_x1))
-    max_amp_y = min((min_y2-offset_y), (offset_y-min_y1))
+    max_amp_x = min((min_x2-offset_x), (offset_x-min_x1))       # Due to slight misalignment we choose which maximum amplitude we can use
+    max_amp_y = min((min_y2-offset_y), (offset_y-min_y1))       # Due to slight misalignment we need to ensure amplitudes stay within range
 
     while running_flag():
-        noise_value = int(np.random.normal(mean, std))  # Generate white noise value
-        #TODO: From noise statistic value to DAC value for FSM
+        noise_value = np.random.normal(mean, std)  # Generate white noise value
+        #TODO: From noise statistic value to DAC value for FSM, right now still scaling values
         if channel == 0:  # X Channel
-            noise_value = offset_x + max_amp_x * noise_value
-            print(noise_value)
+            noise_value = max(min((offset_x + max_amp_x * noise_value), min_x2), min_x1)            # Cap it at max amplitude
             global_time_x += 0.01
             sendDAC(noise_value, 0, 1)
             queue.put((global_time_x, noise_value))
             x_writer.writerow([global_time_x, noise_value])  # Log X data
         
         elif channel == 1:  # Y Channel
-            noise_value = offset_x + max_amp_y * noise_value
-            print(noise_value)
+            noise_value = max(min((offset_y + max_amp_y * noise_value), min_y2), min_y1)            # Cap it at max amplitude
             global_time_y += 0.01
             sendDAC(noise_value, 1, 1)
             queue.put((global_time_y, noise_value))
@@ -161,22 +154,33 @@ def update_plot():
         time_data_y.append(current_time)
         noise_data_y.append(sine_value)
 
-    # Update individual X and Y sine wave plots
-    ax[0].clear()
-    ax[0].plot(time_data_x, noise_data_x, 'r-', label="X Signal")
-    ax[0].set_title("X Noise signal")
-    ax[0].set_xlabel(f'Running time')
-    ax[0].set_ylabel(f'DAC value')
-    ax[0].set_ylim(0x740D, 0x923D)
-    ax[0].legend()
+    # Update individual X and Y noise plots
+    ax[0,0].clear()
+    ax[0,0].plot(time_data_x, noise_data_x, 'r-', label="X Signal")
+    ax[0,0].set_title("X Noise signal")
+    ax[0,0].set_xlabel(f'Running time')
+    ax[0,0].set_ylabel(f'DAC value')
+    ax[0,0].set_ylim(0x740D, 0x923D)
+    ax[0,0].legend()
 
-    ax[1].clear()
-    ax[1].plot(time_data_y, noise_data_y, 'b-', label="Y Signal")
-    ax[1].set_title("Y Noise Signal")
-    ax[1].set_xlabel(f'Running time')
-    ax[1].set_ylabel(f'DAC value')
-    ax[1].set_ylim(0x70E4, 0x927C)
-    ax[1].legend()
+    ax[1,0].clear()
+    ax[1,0].plot(time_data_y, noise_data_y, 'b-', label="Y Signal")
+    ax[1,0].set_title("Y Noise Signal")
+    ax[1,0].set_xlabel(f'Running time')
+    ax[1,0].set_ylabel(f'DAC value')
+    ax[1,0].set_ylim(0x70E4, 0x927C)
+    ax[1,0].legend()
+
+    if np.shape(noise_data_x) == np.shape(noise_data_y):
+        ax[0,1].clear()
+        ax[0,1].plot(noise_data_x, noise_data_y, 'b-', label="FSM pattern")
+        ax[0,1].set_title("FSM Pattern")
+        ax[0,1].set_xlabel(f'X DAC Value')
+        ax[0,1].set_xlim(0x740D, 0x923D)
+        ax[0,1].set_ylabel(f'Y DAC Value')
+        ax[0,1].set_ylim(0x70E4, 0x927C)
+        ax[0,1].legend()
+
 
     # Redraw the figure
     canvas.draw()
@@ -189,7 +193,7 @@ def draw_figure(canvas_elem, fig):
     return figure_canvas_agg
 
 # Create the Matplotlib figure with subplots
-fig, ax = plt.subplots(2, 1, figsize=(8, 12))  # Three subplots: X, Y, and Y vs X
+fig, ax = plt.subplots(2, 2, figsize=(8, 12))
 
 # Draw the Matplotlib figure in the Canvas element
 canvas = draw_figure(window['-CANVAS-'], fig)
