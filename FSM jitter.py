@@ -173,15 +173,15 @@ def update_plot():
 
     if np.shape(noise_data_x) == np.shape(noise_data_y):
         ax[0,1].clear()
-        ax[0,1].plot(noise_data_x, noise_data_y, 'b-', label="FSM pattern")
+        ax[0,1].scatter(noise_data_x, noise_data_y, label='Offset due to noise')
+        ax[0,1].scatter(0x84D0, 0x7FBC, label='Mirror centre', color='red')
         ax[0,1].set_title("FSM Pattern")
         ax[0,1].set_xlabel(f'X DAC Value')
         ax[0,1].set_xlim(0x740D, 0x923D)
         ax[0,1].set_ylabel(f'Y DAC Value')
         ax[0,1].set_ylim(0x70E4, 0x927C)
         ax[0,1].legend()
-
-
+    
     # Redraw the figure
     canvas.draw()
 
