@@ -250,3 +250,41 @@ def combine_csv_files(x_file, y_file, combined_file):
 combine_csv_files('noise_x_data.csv', 'noise_y_data.csv', 'combined_noise_data_after.csv')
 
 print("CSV files have been successfully combined into 'combined_noise_data_after.csv'.")
+
+# def white_noise_signal(mean_rad, std_rad, running_flag, queue, channel):
+#     global global_time_x, global_time_y
+
+#     # Define DAC properties
+#     # Define DAC limits
+#     min_x1, min_x2 = 0x740D, 0x923D  # X limits (29709 - 37437)
+#     min_y1, min_y2 = 0x70E4, 0x927C  # Y limits (28900 - 37500)
+
+#     # Detector center
+#     offset_x = 0x84D0                # () Offset Gregoire and I have determined early on
+#     offset_y = 0x7FBC                # () Offset Gregoire and I have determined early on
+
+#     ANGULAR_RANGE_RAD = 1.4388e-4    # detector radius
+#     K_DAC_X = (min_x2 - min_x1) / ANGULAR_RANGE_RAD  # DAC units per radian
+#     K_DAC_Y = (min_y2 - min_y1) / ANGULAR_RANGE_RAD
+#     K_DAC = 65535 / (3 * np.pi()/180)
+
+#     while running_flag():
+#         noise_value_rad = np.random.normal(mean_rad, std_rad)  # Generate white noise in radians)
+
+#         if channel == 0:  # X Channel
+#             noise_value_dac = offset_x + K_DAC_X * noise_value_rad
+#             noise_value_dac = max(min(noise_value_dac, min_x2), min_x1) # Ensure it stays within 16-bit DAC range
+#             global_time_x += 0.01
+#             sendDAC(int(noise_value_dac), 0, 1)
+#             queue.put((global_time_x, noise_value_dac))
+#             x_writer.writerow([global_time_x, noise_value_dac])  # Log X data
+        
+#         elif channel == 1:  # Y Channel
+#             noise_value_dac = offset_y + K_DAC_Y * noise_value_rad
+#             noise_value_dac = max(min(noise_value_dac, min_x2), min_x1) # Ensure it stays within 16-bit DAC range
+#             global_time_y += 0.01
+#             sendDAC(int(noise_value_dac), 1, 1)
+#             queue.put((global_time_y, noise_value_dac))
+#             y_writer.writerow([global_time_y, noise_value_dac])  # Log Y data
+
+#         time.sleep(0.01)  # Update rate: 10 ms
