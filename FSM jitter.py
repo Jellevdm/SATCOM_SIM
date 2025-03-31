@@ -83,8 +83,8 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
     min_y1, min_y2 = 0x70E4, 0x927C  # Y limits (28900 - 37500)
 
     # Detector center
-    offset_x = 0x84D0                # Offset Gregoire and I have determined early on
-    offset_y = 0x7FBC                # Offset Gregoire and I have determined early on
+    offset_x = 0x84D0                # () Offset Gregoire and I have determined early on
+    offset_y = 0x7FBC                # () Offset Gregoire and I have determined early on
 
     # Maximum Amplitude Ranges
     max_amp_x = min((min_x2-offset_x), (offset_x-min_x1))       # Due to slight misalignment we choose which maximum amplitude we can use
@@ -142,7 +142,6 @@ noise_data_x = deque(maxlen=plot_length)
 time_data_y = deque(maxlen=plot_length)
 noise_data_y = deque(maxlen=plot_length)
 
-# Function to update the plot (use global_time for continuous time tracking)
 def update_plot():
     while not data_queue_x.empty():
         current_time, sine_value = data_queue_x.get()
@@ -180,8 +179,7 @@ def update_plot():
         ax[0,1].set_xlim(0x740D, 0x923D)
         ax[0,1].set_ylabel(f'Y DAC Value')
         ax[0,1].set_ylim(0x70E4, 0x927C)
-        ax[0,1].legend()
-    
+
     # Redraw the figure
     canvas.draw()
 
@@ -218,3 +216,37 @@ while True:
 window.close()
 if fsmPort:
     fsmPort.close()
+
+def combine_csv_files(x_file, y_file, combined_file):
+    """
+    Combines two CSV files (X and Y data) into a single CSV file.
+    Assumes both X and Y files have the same time order and same length.
+    Writes a combined CSV with columns: Time, X Value, Y Value.
+    """
+    # Open the X and Y CSV files
+    with open(x_file, 'r') as x_data, open(y_file, 'r') as y_data, open(combined_file, 'w', newline='') as combined_data:
+        x_reader = csv.reader(x_data)
+        y_reader = csv.reader(y_data)
+        combined_writer = csv.writer(combined_data)
+        
+        # Skip headers
+        next(x_reader)
+        next(y_reader)
+        
+        # Write the header for the combined file
+        combined_writer.writerow(["Time", "X Value", "Y Value"])
+        
+        # Read both files line by line and write to the combined CSV
+        for x_row, y_row in zip(x_reader, y_reader):
+            # Assuming both files have the same time format and order
+            time = x_row[0]  # Time column from X CSV (we assume same time in both files)
+            x_value = x_row[1]  # X value from X CSV
+            y_value = y_row[1]  # Y value from Y CSV
+            
+            # Write the combined row
+            combined_writer.writerow([time, x_value, y_value])
+
+# Function call after stopping the noise generation
+combine_csv_files('noise_x_data.csv', 'noise_y_data.csv', 'combined_noise_data_after.csv')
+
+print("CSV files have been successfully combined into 'combined_noise_data_after.csv'.")
