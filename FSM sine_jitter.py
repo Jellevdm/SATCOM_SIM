@@ -51,8 +51,8 @@ def sendDAC(d, channel, mode):
 # GUI Layout
 sg.theme('DarkAmber')
 windowLayout = [
-    [sg.Text('X Frequency (Hz):'), sg.InputText('1', key='freq_x', size=(5,1)), sg.Text('Amplitude:'), sg.InputText('1', key='amp_x', size=(5,1)), sg.Button('Start X Sine'), sg.Button('Stop X Sine')],
-    [sg.Text('Y Frequency (Hz):'), sg.InputText('1', key='freq_y', size=(5,1)), sg.Text('Amplitude:'), sg.InputText('1', key='amp_y', size=(5,1)), sg.Button('Start Y Sine'), sg.Button('Stop Y Sine')],
+    [sg.Text('Noise std:'), sg.InputText('1', key='noise_std', size=(5,1)), 
+     sg.Text('Noise mean:'), sg.InputText('0', key='noise_mean', size=(5,1))],
     [sg.Button('Start Both')], [sg.Button('Stop Both')],
     [sg.Canvas(key='-CANVAS-', size=(800, 600))]
 ]
@@ -74,139 +74,103 @@ except IndexError:
 running_x = False
 running_y = False
 
-# Helper functions for jitter generation
-def generate_jitter_amp(mean, std):
-    return np.random.normal(mean, std)
-
-def generate_jitter_freq(low, high):
-    return np.random.uniform(low, high)
-
 # Track time for x and y independently
 global_time_x = 0
 global_time_y = 0
 
-# Function to generate sine wave with jitter and send data
-def sine_wave_with_jitter(base_freq, base_amp, running_flag, queue, channel):
+def white_noise_signal(mean, std, running_flag, queue, channel):
     global global_time_x, global_time_y
 
     # Define DAC limits
     min_x1, min_x2 = 0x740D, 0x923D  # X limits (28900 - 37500)
     min_y1, min_y2 = 0x70E4, 0x927C  # Y limits (29709 - 37437)
 
-    # Compute center and amplitude limits
+    # Detector center
     offset_x = 0x84D0
-    max_amplitude_x = (min_x2 - min_x1) // 2  # Half-range amplitude for X
-
     offset_y = 0x7FBC
-    max_amplitude_y = (min_y2 - min_y1) // 2  # Half-range amplitude for Y
 
-    jitter_interval = 3  # Jitter every ... seconds
-    prev_freq = base_freq
-
-    # Initial jitter parameters
-    jittered_freq = base_freq
-    jittered_amp = base_amp
-    # jittered_phase = np.random.uniform(0, 2 * np.pi)
+    # Maximum Amplitude Ranges
+    max_amp_x = min((min_x2-offset_x), (offset_x-min_x1))
+    max_amp_y = min((min_y2-offset_y), (offset_y-min_y1))
 
     while running_flag():
+        noise_value = int(np.random.normal(mean, std))  # Generate white noise value
+        #TODO: From noise statistic value to DAC value for FSM
         if channel == 0:  # X Channel
-            if (global_time_x % jitter_interval) < 0.01:
-                jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jittered_amp = min((base_amp * generate_jitter_amp(0.8, 1.2)),0.9)
-                # jittered_phase = np.random.uniform(0, 2 * np.pi)
-                prev_freq = jittered_freq  
-
-            # Ensure amplitude is within limits
-            amplitude_x = int(max_amplitude_x * jittered_amp)
-            sine_value = int(offset_x + amplitude_x * np.sin(2 * np.pi * jittered_freq * global_time_x))
-
-            # Constrain within DAC range
-            sine_value = max(min_x1, min(min_x2, sine_value))
-
+            noise_value = offset_x + max_amp_x * noise_value
+            print(noise_value)
             global_time_x += 0.01
-            sendDAC(sine_value, 0, 1)
-            queue.put((global_time_x, sine_value))
-            x_writer.writerow([global_time_x, sine_value])  # Log X data
-
+            sendDAC(noise_value, 0, 1)
+            queue.put((global_time_x, noise_value))
+            x_writer.writerow([global_time_x, noise_value])  # Log X data
+        
         elif channel == 1:  # Y Channel
-            if (global_time_y % jitter_interval) < 0.01:
-                jittered_freq = generate_jitter_freq(prev_freq * 0.8, prev_freq * 1.2)
-                jittered_amp = min((base_amp * generate_jitter_amp(0.8, 1.2)),0.9)
-                jittered_phase = np.random.uniform(0, 2 * np.pi)
-                prev_freq = jittered_freq  
-
-            # Ensure amplitude is within limits
-            amplitude_y = int(max_amplitude_y * jittered_amp)
-            sine_value = int(offset_y + amplitude_y * np.sin(2 * np.pi * jittered_freq * global_time_y))
-
-            # Constrain within DAC range
-            sine_value = max(min_y1, min(min_y2, sine_value))
-
+            noise_value = offset_x + max_amp_y * noise_value
+            print(noise_value)
             global_time_y += 0.01
-            sendDAC(sine_value, 1, 1)
-            queue.put((global_time_y, sine_value))
-            y_writer.writerow([global_time_y, sine_value])  # Log Y data
-
+            sendDAC(noise_value, 1, 1)
+            queue.put((global_time_y, noise_value))
+            y_writer.writerow([global_time_y, noise_value])  # Log Y data
+        
         time.sleep(0.01)  # Update rate: 10 ms
 
-
-# Functions to start and stop sine waves for X and Y axes
-def start_sine_x():
+# Functions to start and stop noise for X and Y axes
+def start_x_noise():
     global running_x
     if not running_x:
         running_x = True
-        base_freq_x = float(values['freq_x'])  # Get frequency from GUI
-        base_amp_x = float(values['amp_x'])    # Get amplitude from GUI
-        threading.Thread(target=sine_wave_with_jitter, args=(base_freq_x, base_amp_x, lambda: running_x, data_queue_x, 0), daemon=True).start()
+        noise_std = float(values['noise_std'])      # Get std from gui
+        noise_mean = float(values['noise_mean'])    # Get mean from gui
+        threading.Thread(target=white_noise_signal, args=(noise_mean, noise_std, lambda: running_x, data_queue_x, 0), daemon=True).start()
 
-def stop_sine_x():
+def stop_x_noise():
     global running_x, x_log_file
     running_x = False
     x_log_file.close()  # Close file
 
-def start_sine_y():
+def start_y_noise():
     global running_y
     if not running_y:
         running_y = True
-        base_freq_y = float(values['freq_y'])  # Get frequency from GUI
-        base_amp_y = float(values['amp_y'])    # Get amplitude from GUI
-        threading.Thread(target=sine_wave_with_jitter, args=(base_freq_y, base_amp_y, lambda: running_y, data_queue_y, 1), daemon=True).start()
+        noise_std = float(values['noise_std'])      # Get std from gui
+        noise_mean = float(values['noise_mean'])    # Get mean from gui
+        threading.Thread(target=white_noise_signal, args=(noise_mean, noise_std, lambda: running_y, data_queue_y, 1), daemon=True).start()
 
-def stop_sine_y():
+def stop_y_noise():
     global running_y, y_log_file
     running_y = False
     y_log_file.close()  # Close file
 
 # Matplotlib real-time plot setup
 time_data_x = deque(maxlen=plot_length)
-sine_data_x = deque(maxlen=plot_length)
+noise_data_x = deque(maxlen=plot_length)
 time_data_y = deque(maxlen=plot_length)
-sine_data_y = deque(maxlen=plot_length)
+noise_data_y = deque(maxlen=plot_length)
 
 # Function to update the plot (use global_time for continuous time tracking)
 def update_plot():
     while not data_queue_x.empty():
         current_time, sine_value = data_queue_x.get()
         time_data_x.append(current_time)
-        sine_data_x.append(sine_value)
+        noise_data_x.append(sine_value)
 
     while not data_queue_y.empty():
         current_time, sine_value = data_queue_y.get()
         time_data_y.append(current_time)
-        sine_data_y.append(sine_value)
+        noise_data_y.append(sine_value)
 
     # Update individual X and Y sine wave plots
     ax[0].clear()
-    ax[0].plot(time_data_x, sine_data_x, 'r-', label="X Sine Wave")
-    ax[0].set_title("X Sine Wave")
+    ax[0].plot(time_data_x, noise_data_x, 'r-', label="X Signal")
+    ax[0].set_title("X Noise signal")
     ax[0].set_xlabel(f'Running time')
     ax[0].set_ylabel(f'DAC value')
     ax[0].set_ylim(0x740D, 0x923D)
     ax[0].legend()
 
     ax[1].clear()
-    ax[1].plot(time_data_y, sine_data_y, 'b-', label="Y Sine Wave")
-    ax[1].set_title("Y Sine Wave")
+    ax[1].plot(time_data_y, noise_data_y, 'b-', label="Y Signal")
+    ax[1].set_title("Y Noise Signal")
     ax[1].set_xlabel(f'Running time')
     ax[1].set_ylabel(f'DAC value')
     ax[1].set_ylim(0x70E4, 0x927C)
@@ -237,20 +201,13 @@ while True:
 
     if event == sg.WIN_CLOSED:
         break
-    if event == 'Start X Sine':
-        start_sine_x()
-    if event == 'Stop X Sine':
-        stop_sine_x()
-    if event == 'Start Y Sine':
-        start_sine_y()
-    if event == 'Stop Y Sine':
-        stop_sine_y()
     if event == 'Start Both':
-        start_sine_x()
-        start_sine_y()
+        start_x_noise()
+        start_y_noise()
     if event == 'Stop Both':
-        stop_sine_x()
-        stop_sine_y()
+        stop_x_noise()
+        stop_y_noise()
+
 # Cleanup
 window.close()
 if fsmPort:
