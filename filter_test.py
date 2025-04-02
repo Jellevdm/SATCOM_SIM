@@ -116,9 +116,9 @@ plt.show()
 # # Design a second-order Butterworth filter
 # b, a = signal.butter(N=2, Wn=Wn, btype='low', analog=False, output='ba')
 
-# # # Create a test signal (10 Hz sine wave + 100 Hz noise)
-# # t = np.linspace(0, 1, fs, endpoint=False)                           # Time vector
-# # x = np.sin(2 * np.pi * 10 * t) + 0.5 * np.sin(2 * np.pi * 120 * t)  # Signal with noise
+# Create a test signal (10 Hz sine wave + 100 Hz noise)
+t = np.linspace(0, 1, fs, endpoint=False)                           # Time vector
+x = np.sin(2 * np.pi * 10 * t) + 0.5 * np.sin(2 * np.pi * 120 * t)  # Signal with noise
 
 # # # Apply the filter
 # # y = signal.lfilter(b, a, x)
@@ -127,15 +127,16 @@ plt.show()
 # w, h = signal.freqz(b, a, worN=1024)  # Compute frequency response
 # frequencies = w * fs / (2 * np.pi)  # Convert to Hz
 
-# # # # Plot both time-domain and frequency response
-# # # plt.figure(figsize=(12, 6))
+# Plot both time-domain and frequency response
+plt.figure(figsize=(12, 6))
 
-# # # Subplot 1: Time Domain Signal
-# # plt.subplot(2, 1, 1)
-# # plt.plot(t, x, label='Original Signal')
-# # plt.plot(t, y, label='Filtered Signal', linewidth=2)
-# # plt.legend()
-# # plt.xlabel("Time [seconds]")
-# # plt.ylabel("Amplitude")
-# # plt.title("Time Domain: Original vs. Filtered Signal")
-# # plt.grid(
+# Subplot 1: Time Domain Signal
+plt.subplot(2, 1, 1)
+plt.plot(t, x, label='Original Signal')
+plt.plot(t, y, label='Filtered Signal', linewidth=2)
+plt.legend()
+plt.xlabel("Time [seconds]")
+plt.ylabel("Amplitude")
+plt.title("Time Domain: Original vs. Filtered Signal")
+plt.grid()
+plt.show()
