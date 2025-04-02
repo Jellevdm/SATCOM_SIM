@@ -95,46 +95,44 @@ except IndexError:
 # Signal Generation Function (Adjusted for Real-Time Sync)
 # ===========================
 
+global_time = 0
+
 def signal(running_flag, data_queue, channel):
+    global global_time
     scale = 1
     fs = 400 # Hz (200 samples per second, which means 1 sample every 5ms)
     tend = 100  # Duration of the signal (in seconds)
     t = np.linspace(0, tend, fs * tend, endpoint=False)  # Create time vector
-    data = (np.sin(2 * np.pi * 1 * t) + np.sin(2 * np.pi * 5 * t) + np.sin(2 * np.pi * 10 * t) + np.sin(2 * np.pi * 20 * t))  # Simulate signal with multiple frequencies
+    data = (np.sin(2 * np.pi * 1 * t))  # Simulate signal with multiple frequencies
     
     # Normalize the data to fit in DAC range
     data_min, data_max = np.min(data), np.max(data)
     data_normalized = (data - data_min) / (data_max - data_min)
-    offset = 0x84D0 if channel == 0 else 0x7FBC
-    max_amp = min((0x923D-0x84D0), (0x84D0-0x740D)) if channel == 0 else min((0x927C-0x7FBC), (0x7FBC-0x70E4))
-    data_scaled = offset + scale * max_amp * (2 * data_normalized - 1)
-    
-    start_time = time.time()  # Record the start time to ensure real-time synchronization
-    
-    for i in range(len(data_scaled)):
-        if not running_flag():  # If stop is requested, exit the loop
-            break
-        
-        # Ensure that the data is sent at the correct time intervals (5ms per sample)
-        elapsed_time = time.time() - start_time
-        expected_time = i / fs  # The expected time for this data point (in seconds)
-        sleep_time = expected_time - elapsed_time
-        
-        if sleep_time > 0:
-            time.sleep(sleep_time)  # Sleep to ensure we send data in real-time
-        
-        # Send data to FSM
-        sendDAC(int(data_scaled[i]), channel, 1)
-        
-        # Add data to the queue for plotting
-        data_queue.put((t[i], int(data_scaled[i])))  
-        
-        # Log data to CSV files
-        if channel == 0:
-            x_writer.writerow([t[i], int(data_scaled[i])])
-        else:
-            y_writer.writerow([t[i], int(data_scaled[i])])
 
+    while running_flag():
+        if channel == 0:
+            offset = 0x84D0
+            max_amp = min((0x923D-0x84D0), (0x84D0-0x740D))
+        elif channel == 1:
+            offset = 0x7FBC
+            max_amp = min((0x927C-0x7FBC), (0x7FBC-0x70E4))
+        
+        data_scaled = offset + scale * max_amp * (2 * data_normalized - 1) 
+
+        for i in range(len(data_scaled)):
+            if not running_flag():
+                break
+            else: 
+                sendDAC(int(data_scaled[i]), channel, 1)
+                data_queue.put((t[i], int(data_scaled[i]))) 
+                global_time += 0.01
+                time.sleep(0.001) 
+            if channel == 0:
+                x_writer.writerow([t[i], int(data_scaled[i])])
+            else:
+                y_writer.writerow([t[i], int(data_scaled[i])])
+            
+            
 
 # ===========================
 # Update Plot Function
