@@ -5,7 +5,7 @@ import tomllib as tom
 import scipy.signal as signal
 from scipy.special import iv 
 from scipy.special import erfc
-
+import pandas as pd
 class OpticalLinkBudget:
     def __init__(self, config, input_name, losses_name):
         self.config = config
@@ -14,11 +14,7 @@ class OpticalLinkBudget:
 
         # Read input parameters
         inputs = self.config[input_name]
-        if inputs["dB_att"]:
-            self.Tx_power = inputs["Tx_power"] * 0.1
-        else:
-            self.Tx_power = inputs["Tx_power"]
-        
+        self.Tx_power = inputs["Tx_power"]
         self.theta_div = inputs["theta_div"]
         self.sigma_pj = inputs["sigma_pj"]
         self.optics_array = inputs["optics_array"]
@@ -149,7 +145,7 @@ class OpticalLinkBudget:
 
 # Simulating optical signal
 class Signal_simulation:
-    def __init__(self, config, inputs_link, inputs_signal, L_c, snr):
+    def __init__(self, config, csv_file, inputs_link, inputs_signal, L_c):
         self.config = config
         link = self.config[inputs_link]
         signal = self.config[inputs_signal]
@@ -161,7 +157,7 @@ class Signal_simulation:
         self.lam = link["wave"]
         self.theta_div = link["theta_div"]
         self.L_c = L_c
-        self.snr = snr 
+        self.snr = signal["snr"] 
 
         # Read signal input parameters
         self.random = signal["random"]
@@ -172,7 +168,20 @@ class Signal_simulation:
         self.fc = signal["fc"]
         self.n = signal["n"]
         self.mu = signal["mu"]
-        
+
+        # Check loaded input to FSM
+        df = pd.read_csv(csv_file)
+        time = df["Time"].to_numpy()
+        x_values = df["X Value"].to_numpy()
+        y_values = df["Y Value"].to_numpy()
+        plt.plot(time, x_values, label='x input to fsm')
+        plt.plot(time, y_values, label='yinput to fsm')
+        plt.xlabel(f'Approximate Time [s]')
+        plt.ylabel(f'FSM DAC value')
+        plt.legend()
+        plt.grid()
+        plt.show()
+
     # Convert dB to linear scale
     def db_2_lin(self, val):
         lin_val = 10 ** (val / 10)
@@ -248,9 +257,7 @@ class Signal_simulation:
         # Losses
 
         array = self.sample_xy(self.sigma_pj, self.z, len(t))
-        print(array)
         array_f = self.butt_filt(self.fs, self.fc, array[0], array[1])
-        print(array_f)
         L_pj = self.intensity_function(array_f[0], array_f[1], self.lam, self.theta_div, self.n, self.z)
         L_tot = self.db_2_lin(self.L_c) * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal

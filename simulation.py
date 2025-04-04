@@ -7,6 +7,8 @@ import tomllib as tom
 
 from functions_classes import *
 
+file_name = "FSM inputs/04-03-inputs/04_03-testing-std(0.3)-mean(0).csv"                   # Change this to read different inputs
+
 # Configure toml file and initialise link budget
 #-----------------------------------------------
 config_path = "config.toml"
@@ -29,10 +31,9 @@ for key in link_budget_des.keys():
 
 # Results of time simulation
 #-----------------------------------------------
-snr = 5
 L_c = 10 ** ((link_budget_des["Total losses [dB]"] - link_budget_des["Pointing jitter loss [dB]"]) / 10)  # Constant loss: all link budget losses except for (jitter-induced) scintillation [dB]
 
-signal_sim = Signal_simulation(config, "inputs_design", "inputs_signal", L_c, snr)     # Initialse time signal simulation class    
+signal_sim = Signal_simulation(config, file_name, "inputs_design", "inputs_signal", L_c)     # Initialse time signal simulation class    
 result_sim = signal_sim.generate_time_sig()                                            # Run the function for generating time signal at Tx and Rx
 result_pdf2ber = signal_sim.pdf2ber_plot()
 

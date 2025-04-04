@@ -14,7 +14,7 @@ wave = 1.55e-6                                                      # Wavelength
 V = 50                                                              # Visibility (km)
 L = 1.39                                                            # Distance Tx to Rx (m)
 temp = 20                                                           # Temperature (Celsius)
-r = 1e-4                                                            # Static pointing error radius (m)
+r = 0.5e-4                                                          # Static pointing error radius (m)
 p_out = 1e-2                                                        # Scintillation outage probability
 sigma_i = 0.45                                                      # Scintillation index
 r0 = 0.02                                                           # Fried parameter (m)
@@ -34,6 +34,7 @@ fc = 100
 n = 1                                                               # Air refractive index [-]
 p_0 = 0.1                                                           # Outage probability [-]
 snr = 5                                                             # Signal-to-noise ratio [dB]
+mu = 0                                                              # pdf2ber mean
 
 #L_c = 0.5                                                          # Constant Loss
 
