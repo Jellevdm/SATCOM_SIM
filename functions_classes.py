@@ -169,15 +169,33 @@ class Signal_simulation:
         self.n = signal["n"]
         self.mu = signal["mu"]
 
-        # Check loaded input to FSM
+        # Check and load FSM Input
         df = pd.read_csv(csv_file)
         time = df["Time"].to_numpy()
         x_values = df["X Value"].to_numpy()
         y_values = df["Y Value"].to_numpy()
-        plt.plot(time, x_values, label='x input to fsm')
-        plt.plot(time, y_values, label='yinput to fsm')
+        
+        # Centre of the detector
+        offset_x = 34000                 # Offset Gregoire and I have determined early on
+        offset_y = 32700                 # Offset Gregoire and I have determined early on
+
+        # Difference/offset from centre
+        x_diff = x_values - offset_x
+        y_diff = y_values - offset_y
+
+        # Convert to radian
+        x_rad = (x_diff / 65535) * (3 * np.pi/180)
+        y_rad = (y_diff / 65535) * (3 * np.pi/180)
+
+        # Convert to distance
+        x_dst = np.tan(x_rad) * 0.67
+        y_dst = np.tan(y_rad) * 0.67
+
+        plt.plot(time, x_dst, label='X-input')
+        plt.plot(time, y_dst, label='Y-input')
+        plt.title(f'FSM imposed offset from centre of detector [m]')
         plt.xlabel(f'Approximate Time [s]')
-        plt.ylabel(f'FSM DAC value')
+        plt.ylabel(f'Centre offset [m]')
         plt.legend()
         plt.grid()
         plt.show()
