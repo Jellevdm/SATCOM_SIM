@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.special import erfc
 import matplotlib.pyplot as plt
-from scipy.special import iv  # iv is the modified Bessel function of the first kind
-                              # can be used to check against the simulation to determine correctness of the simulation.
-                              
+from scipy.special import iv  # iv is the modified Bessel function of the first kind, # can be used to check against the simulation to determine correctness of the simulation.
+from scipy.special import besseli                        
+  
 def pdfIGauss(w0, sigmaPJ, mu):
     """
     Computes the probability density function (PDF) of the irradiance fluctuations 
@@ -44,6 +44,7 @@ def pdf2ber(pdf, u):
     
     return BER, SNR
 
+pdf = pdfIGauss()
 BER, SNR = pdf2ber(pdf, u)
 
 # Plot the BER curve

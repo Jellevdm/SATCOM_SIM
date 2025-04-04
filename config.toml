@@ -32,6 +32,7 @@ fs = 1e7
 fc = 1e5
 n = 1                                                               # Air refractive index [-]
 p_0 = 0.1                                                           # Outage probability [-]
+mu = 0                                                              # pdf2ber mean
 
 #snr = 5                                                            # Signal-to-noise ratio [dB]
 #L_c = 0.5                                                          # Constant Loss

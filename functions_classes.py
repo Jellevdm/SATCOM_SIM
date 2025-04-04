@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tomllib as tom
 import scipy.signal as signal
+from scipy.special import iv 
+from scipy.special import erfc
 
 class OpticalLinkBudget:
     def __init__(self, config, input_name, losses_name):
@@ -169,7 +171,8 @@ class Signal_simulation:
         self.fs = signal["fs"]
         self.fc = signal["fc"]
         self.n = signal["n"]
-
+        self.mu = signal["mu"]
+        
     # Convert dB to linear scale
     def db_2_lin(self, val):
         lin_val = 10 ** (val / 10)
@@ -303,5 +306,59 @@ class Signal_simulation:
 
         # Show all plots
         plt.tight_layout()
+        plt.show()
+        return 
+    
+    def pdfIGauss(self, lam, theta_div, n, sigmaPJ, mu):
+        """
+        Computes the probability density function (PDF) of the irradiance fluctuations 
+        for free-space optical communications with nonzero boresight pointing errors.
+
+        Parameters:
+        w0      : Beam waist (spot size at the receiver)
+        sigmaPJ : Pointing jitter standard deviation
+        mu      : Mean offset of the pointing error
+
+        Returns:
+        pdf : The probability density function values
+        hp  : The corresponding intensity fluctuation values (range from 0 to 1)
+        """
+        w_0 = lam / (theta_div * np.pi * n)
+        gamma = w_0 / (2 * sigmaPJ)  # Compute gamma
+        hp = np.linspace(0.1, 1, 1001)  # Define hp values from 0 to 1
+
+        # Compute the argument for the modified Bessel function
+        Z = (mu / sigmaPJ**2) * np.sqrt(-w_0**2 * np.log(hp) / 2)
+
+        # Compute the integral term using the modified Bessel function of the first kind (I0)
+        I = np.exp(-mu**2 / (2 * sigmaPJ**2)) * iv(0, Z)
+
+        # Compute the final PDF
+        pdf = gamma**2 * hp**(gamma**2 - 1) * I
+
+        return pdf, hp
+
+    def pdf2ber(self, pdf, u):
+        pdf = np.asarray(pdf).flatten()
+        u = np.asarray(u).flatten()
+
+        du = np.mean(np.diff(u))
+        SNR = np.linspace(0, 100, 1000)
+
+        integr = pdf * erfc(SNR[:, None] * u / (2 * np.sqrt(2)))
+        BER = 0.5 * np.sum(integr, axis=1) * du
+
+        return BER, SNR
+    
+    def pdf2ber_plot(self):
+        pdf, hp = self.pdfIGauss(self.lam, self.theta_div, self.n, self.sigma_pj, self.mu)
+        BER, SNR = self.pdf2ber(pdf, hp)
+        # Plot the BER curve
+        plt.semilogy(SNR, BER, label='Simulation')  # Log scale for BER
+        plt.xlabel("SNR (dB)")
+        plt.ylabel("BER")
+        plt.legend()
+        plt.title("Bit Error Rate vs. SNR")
+        plt.grid()
         plt.show()
         return

@@ -15,19 +15,12 @@ with open(config_path, 'rb') as f:          # 'rb' mode is required for tomllib
 
 # Load a specific input file
 #------
-optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")           # Initialise optical link budget class for lecture example
+# optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")           # Initialise optical link budget class for lecture example
 optical_link_design = OpticalLinkBudget(config, "inputs_design", "losses_design")   # Initialise optical link budget class for our design                   
 #-----------------------------------------------
 
 # Results of link budget
 #-----------------------------------------------
-print(f'Lecture example:')
-link_budget_lec = optical_link_lect.compute_link_budget()
-for key in link_budget_lec.keys():
-    print(f"{key}: {link_budget_lec[key]:.4f}")
-
-print(f'---------------------------------')
-
 print(f'Design example:')
 link_budget_des = optical_link_design.compute_link_budget()
 for key in link_budget_des.keys():
@@ -41,6 +34,7 @@ L_c = 10 ** ((link_budget_des["Total losses [dB]"] - link_budget_des["Pointing j
 
 signal_sim = Signal_simulation(config, "inputs_design", "inputs_signal", L_c, snr)     # Initialse time signal simulation class    
 result_sim = signal_sim.generate_time_sig()                                            # Run the function for generating time signal at Tx and Rx
+result_pdf2ber = signal_sim.pdf2ber_plot()
 
 # TODO: Fix the connection with link budget (Same input values)
 # TODO: Fix the SNR calculation
