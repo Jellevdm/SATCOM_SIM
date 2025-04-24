@@ -79,12 +79,12 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
     global global_time_x, global_time_y
 
     # Define DAC limits
-    min_x1, min_x2 = 0x740D, 0x923D  # X limits (29709 - 37437)
-    min_y1, min_y2 = 0x70E4, 0x927C  # Y limits (28900 - 37500)
+    min_x1, min_x2 = 0x5622, 0xB2B6  # X limits (22850 - 45750)
+    min_y1, min_y2 = 0x5654, 0xABE0  # Y limits (22100 - 44000)
 
     # Detector center
-    offset_x = 0x84D0                # () Offset Gregoire and I have determined early on
-    offset_y = 0x7FBC                # () Offset Gregoire and I have determined early on
+    offset_x = 0x8E30                # (36400) Offset Gregoire and I have determined early on
+    offset_y = 0x81B0                # (33200) Offset Gregoire and I have determined early on
 
     # Maximum Amplitude Ranges
     max_amp_x = min((min_x2-offset_x), (offset_x-min_x1))       # Due to slight misalignment we choose which maximum amplitude we can use
@@ -159,7 +159,7 @@ def update_plot():
     ax[0,0].set_title("X Noise signal")
     ax[0,0].set_xlabel(f'Running time')
     ax[0,0].set_ylabel(f'DAC value')
-    ax[0,0].set_ylim(0x740D, 0x923D)
+    ax[0,0].set_ylim(0x5622, 0xB2B6)
     ax[0,0].legend()
 
     ax[1,0].clear()
@@ -167,18 +167,18 @@ def update_plot():
     ax[1,0].set_title("Y Noise Signal")
     ax[1,0].set_xlabel(f'Running time')
     ax[1,0].set_ylabel(f'DAC value')
-    ax[1,0].set_ylim(0x70E4, 0x927C)
+    ax[1,0].set_ylim(0x5654, 0xABE0)
     ax[1,0].legend()
 
     if np.shape(noise_data_x) == np.shape(noise_data_y):
         ax[0,1].clear()
         ax[0,1].scatter(noise_data_x, noise_data_y, label='Offset due to noise')
-        ax[0,1].scatter(0x84D0, 0x7FBC, label='Mirror centre', color='red')
+        ax[0,1].scatter(0x8E30, 0x81B0, label='Mirror centre', color='red')
         ax[0,1].set_title("FSM Pattern")
         ax[0,1].set_xlabel(f'X DAC Value')
-        ax[0,1].set_xlim(0x740D, 0x923D)
+        ax[0,1].set_xlim(0x5622, 0xB2B6)
         ax[0,1].set_ylabel(f'Y DAC Value')
-        ax[0,1].set_ylim(0x70E4, 0x927C)
+        ax[0,1].set_ylim(0x5654, 0xABE0)
 
     # Redraw the figure
     canvas.draw()
