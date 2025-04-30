@@ -4,21 +4,22 @@
 
 [inputs_design]
 Tx_power = 10e-3                                                    # Transmit laser power (W)
-dB_att = true                                                       # 10 dB attenuator added before the modulator true=yes, false=no
-theta_div = 10.0e-6                                                 # Beam divergence angle (radians)
-sigma_pj = 2e-6                                                     # Pointing jitter (radians)
-optics_array = [0.125, 0.95, 0.96, 0.5, 0.96, 0.96, 0.95]           # Optical efficiency array
+theta_div = 1.197e-2                                                # Beam divergence angle (radians)
+sigma_pj = 2.394e-3                                                 # Pointing jitter (radians)
+optics_array = [0.9983, 0.4467, 0.9247, 
+                0.9247, 0.9486, 0.9486, 
+                0.3949, 0.3949, 0.9486]                             # Optical efficiency array
 Dr = 2e-4                                                           # Receiver diameter (m)
 wave = 1.55e-6                                                      # Wavelength (m)
 V = 50                                                              # Visibility (km)
 L = 1.39                                                            # Distance Tx to Rx (m)
 temp = 20                                                           # Temperature (Celsius)
-r = 5e-4                                                            # Static pointing error radius (m)
+r = 0.5e-4                                                          # Static pointing error radius (m)
 p_out = 1e-2                                                        # Scintillation outage probability
 sigma_i = 0.45                                                      # Scintillation index
 r0 = 0.02                                                           # Fried parameter (m)
 eta_rx = 0.7                                                        # Receiver efficiency
-Rx_treshold = 1e-6                                                  # Receiver threshold power (W)
+Rx_treshold = 1.6e-5                                                # Receiver threshold power (W)
 n_nom = 0.8                                                         # Nominal coupling efficiency
 attenuator = -10                                                    # Attenuator loss (dB)
 link = "down"                                                       # "up" for uplink, "down" for downlink
@@ -28,12 +29,13 @@ random = false                                                      # Switch: if
 R_f = 10                                                            # Frequency ratio: ratio between transmitter frequency and random frequency (visual)
 bitrate = 25                                                        # Transmitted bits per second [-]
 t_end = 2                                                           # Signal duration [s]
-fs = 1e7
-fc = 1e5
+fs = 1000
+fc = 100
 n = 1                                                               # Air refractive index [-]
 p_0 = 0.1                                                           # Outage probability [-]
+snr = 5                                                             # Signal-to-noise ratio [dB]
+mu = 0                                                              # pdf2ber mean
 
-#snr = 5                                                            # Signal-to-noise ratio [dB]
 #L_c = 0.5                                                          # Constant Loss
 
 [losses_design]

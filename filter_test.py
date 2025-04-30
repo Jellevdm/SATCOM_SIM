@@ -1,6 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as signal
+import pandas as pd
+
+file_name = "FSM inputs/04-03-inputs/04_03-testing-std(0.5)-mean(0.3).csv"
+df = pd.read_csv(file_name)
+time = df["Time"].to_numpy()
+x_values = df["X Value"].to_numpy()
+y_values = df["Y Value"].to_numpy()
+plt.plot(time, x_values, label='x input to fsm')
+plt.plot(time, y_values, label='yinput to fsm')
+plt.xlabel(f'Approximate Time [s]')
+plt.ylabel(f'FSM DAC value')
+plt.legend()
+plt.grid()
+plt.show()
 
 # Sampling frequency and cutoff frequency
 fs = 1000  # Hz
@@ -50,7 +64,7 @@ y = array[1]
 # print(y)
 
 #filtered noise
-array_f = butt_filt(fs, fc, x, y)
+array_f = butt_filt(fs, fc, x_values, y_values)
 frequencies = array_f[2]
 x_f = array_f[0]
 y_f =array_f[1]
@@ -73,8 +87,8 @@ plt.show()
 
 # Subplot 1: Time Domain Signal x
 plt.subplot(2, 1, 1)
-plt.plot(t, x, label='Original Signal')
-plt.plot(t, x_f, label='Filtered Signal', linewidth=2)
+plt.plot(time, x_values, label='Original Signal')
+plt.plot(time, x_f, label='Filtered Signal', linewidth=2)
 plt.legend()
 plt.xlabel("Time [seconds]")
 plt.ylabel("Amplitude - x")
@@ -83,8 +97,8 @@ plt.grid()
 
 # Subplot 2: Time domain signal y
 plt.subplot(2, 1, 2)
-plt.plot(t, y, label='Original Signal')
-plt.plot(t, y_f, label='Filtered Signal', linewidth=2)
+plt.plot(time, y_values, label='Original Signal')
+plt.plot(time, y_f, label='Filtered Signal', linewidth=2)
 plt.legend()
 plt.xlabel("Time [seconds]")
 plt.ylabel("Amplitude - y")
@@ -95,7 +109,7 @@ plt.show()
 plt.figure(figsize=(8, 6))
 
 # Plot original and filtered trajectories
-plt.plot(x, y, label="Original Path", alpha=0.6)
+plt.plot(x_values, y_values, label="Original Path", alpha=0.6)
 plt.plot(x_f, y_f, label="Filtered Path", linestyle="--", linewidth=2)
 
 # Mark start and end points
