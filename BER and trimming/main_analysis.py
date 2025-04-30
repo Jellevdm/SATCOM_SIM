@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def find_transition_points(file_path, threshold=1):
+def find_transition_points(file_path, threshold=1, noise_tolerance=0.05):
     # Read the CSV file
     data = pd.read_csv(file_path, header=None)
     
@@ -19,28 +19,36 @@ def find_transition_points(file_path, threshold=1):
         print("No significant transitions found.")
         return None, None, data
     
-    # Find the start and end of the non-constant region
+    # Find the start of the non-constant region
     start_index = transition_indices[0]
-    end_index = transition_indices[-1]
-    
-    # Get the corresponding x values
     start_x = x_values.iloc[start_index]
-    end_x = x_values.iloc[end_index + 1]  # +1 because diff reduces the length by 1
+    
+    # Find the end of the region where the signal becomes constant (ignoring noise and zero values)
+    reversed_curve = curve[::-1]
+    for i in range(len(reversed_curve)):
+        non_zero_values = reversed_curve[:i + 1][reversed_curve[:i + 1] > threshold]
+        if not np.all(np.abs(non_zero_values - non_zero_values.max()) <= noise_tolerance):
+            end_index = len(curve) - i - 1
+            break
+    else:
+        end_index = len(curve)-1  # Default to the last index if no such point is found
+    print(end_index)
+    end_x = x_values.iloc[end_index]
     
     # Slice the data and shift the first column to start at 0
-    trimmed_data = data.iloc[start_index:end_index + 2].copy()
+    trimmed_data = data.iloc[start_index:end_index + 1].copy()
     trimmed_data.iloc[:, 0] = pd.to_numeric(trimmed_data.iloc[:, 0], errors='coerce').fillna(0)  # Ensure numeric values
     trimmed_data.iloc[:, 0] -= start_x  # Shift the first column
     
     return start_x, end_x, trimmed_data
 
 # Example usage
-file_path = "pico_total.csv"  # Replace with the path to your CSV file
-start, end, trimmed_data = find_transition_points(file_path, threshold=1)
+file_path = "BER and trimming/pico_total.csv"  # Replace with the path to your CSV file
+start, end, trimmed_data = find_transition_points(file_path, threshold=0.1, noise_tolerance=0.1)
 if start is not None and end is not None:
     print(f"The curve starts to change at x = {start} and becomes constant again at x = {end}.")
     # Save the trimmed data to a new CSV file
-    trimmed_data.to_csv("pico_total_trimmed.csv", index=False, header=False)
+    trimmed_data.to_csv("BER and trimming/pico_total_trimmed.csv", index=False, header=False)
     print("Trimmed data saved to 'pico_total_trimmed.csv'.")
 else:
     print("No significant transitions found.")
@@ -75,5 +83,5 @@ def scale_time_series(file_path, start, end):
     
 # Example usage
 if start is not None and end is not None:
-    scale_time_series("fsm.csv", start, end)
+    scale_time_series("BER and trimming/fsm.csv", start, end)
 
