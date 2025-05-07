@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 import pandas as pd
 
-file_name = "FSM inputs/04-03-inputs/04_03-testing-std(0.5)-mean(0.3).csv"
+file_name = "FSM inputs/04-03-inputs/04_03-testing-std(0.1)-mean(0).csv"
 df = pd.read_csv(file_name)
 time = df["Time"].to_numpy()
 x_values = df["X Value"].to_numpy()
