@@ -1,5 +1,5 @@
 # Import needed packages
-from os import link
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as signal
@@ -8,6 +8,7 @@ import tomllib as tom
 from functions_classes import *
 
 file_name = "FSM inputs/04-03-inputs/04_03-testing-std(0.1)-mean(0).csv"                   # Change this to read different inputs
+os.chdir('Simulation files')                                                               # Change working directory to the folder where the script is located
 
 # Configure toml file and initialise link budget
 #-----------------------------------------------
