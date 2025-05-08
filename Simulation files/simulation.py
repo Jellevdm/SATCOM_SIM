@@ -38,9 +38,6 @@ signal_sim = Signal_simulation(config, file_name, "inputs_design", "inputs_signa
 result_sim = signal_sim.generate_time_sig()                                            # Run the function for generating time signal at Tx and Rx
 result_pdf2ber = signal_sim.pdf2ber_plot()
 
-# TODO: Fix the connection with link budget (Same input values)
-# TODO: Fix the SNR calculation
-# TODO: Fix correction noise addition
 
 
 
