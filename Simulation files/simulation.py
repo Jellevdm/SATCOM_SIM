@@ -7,7 +7,7 @@ import tomllib as tom
 
 from functions_classes import *
 
-file_name = "FSM inputs/04-03-inputs/04_03-testing-std(0.1)-mean(0).csv"                   # Change this to read different inputs
+file_name = "FSM inputs/04-30-inputs/04_30-fsm-std(0.1)-mean(0.1).csv"                   # Change this to read different inputs
 os.chdir('Simulation files')                                                               # Change working directory to the folder where the script is located
 
 # Configure toml file and initialise link budget
@@ -18,7 +18,7 @@ with open(config_path, 'rb') as f:          # 'rb' mode is required for tomllib
 
 # Load a specific input file
 #------
-# optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")           # Initialise optical link budget class for lecture example
+# optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")         # Initialise optical link budget class for lecture example
 optical_link_design = OpticalLinkBudget(config, "inputs_design", "losses_design")   # Initialise optical link budget class for our design                   
 #-----------------------------------------------
 

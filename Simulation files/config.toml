@@ -24,6 +24,8 @@ n_nom = 0.8                                                         # Nominal co
 attenuator = -10                                                    # Attenuator loss (dB)
 link = "down"                                                       # "up" for uplink, "down" for downlink
 
+w_beam = 0.0009687612477
+
 [inputs_signal]
 random = false                                                      # Switch: if False, use seed 0
 R_f = 10                                                            # Frequency ratio: ratio between transmitter frequency and random frequency (visual)

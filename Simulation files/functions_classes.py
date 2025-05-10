@@ -147,6 +147,7 @@ class OpticalLinkBudget:
 class Signal_simulation:
     def __init__(self, config, csv_file, inputs_link, inputs_signal, L_c):
         self.config = config
+        self.csv_file = csv_file
         link = self.config[inputs_link]
         signal = self.config[inputs_signal]
 
@@ -157,7 +158,8 @@ class Signal_simulation:
         self.lam = link["wave"]
         self.theta_div = link["theta_div"]
         self.L_c = L_c
-        self.snr = signal["snr"] 
+        self.Dr = link["Dr"]
+        self.w_beam = link['w_beam']
 
         # Read signal input parameters
         self.random = signal["random"]
@@ -168,37 +170,23 @@ class Signal_simulation:
         self.fc = signal["fc"]
         self.n = signal["n"]
         self.mu = signal["mu"]
+        self.snr = signal["snr"] 
 
-        # Check and load FSM Input
-        df = pd.read_csv(csv_file)
-        time = df["Time"].to_numpy()
-        x_values = df["X Value"].to_numpy()
-        y_values = df["Y Value"].to_numpy()
-        
-        # Centre of the detector
-        offset_x = 34000                 # Offset Gregoire and I have determined early on
-        offset_y = 32700                 # Offset Gregoire and I have determined early on
+    def read_FSM(self, csv_file):
+        df = pd.read_csv(csv_file, header=None).dropna().iloc[1:].astype(float)
+        t, x_bit, y_bit = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
+        return t, x_bit, y_bit
 
-        # Difference/offset from centre
-        x_diff = x_values - offset_x
-        y_diff = y_values - offset_y
-
-        # Convert to radian
-        x_rad = (x_diff / 65535) * (3 * np.pi/180)
-        y_rad = (y_diff / 65535) * (3 * np.pi/180)
-
-        # Convert to distance
-        x_dst = np.tan(x_rad) * 0.67
-        y_dst = np.tan(y_rad) * 0.67
-
-        plt.plot(time, x_dst, label='X-input')
-        plt.plot(time, y_dst, label='Y-input')
-        plt.title(f'FSM imposed offset from centre of detector [m]')
-        plt.xlabel(f'Approximate Time [s]')
-        plt.ylabel(f'Centre offset [m]')
-        plt.legend()
-        plt.grid()
-        plt.show()
+    def bits_2_pos(self, bits, bounds):
+        pos = bits.copy()
+        idx_low = np.where(pos < bounds[1])
+        idx_mid = np.where(pos == bounds[1])
+        idx_high = np.where(pos > bounds[1])
+        pos[idx_low] = -1 * ((bounds[1] - bounds[0]) - (pos[idx_low] - bounds[0])) / (bounds[1] - bounds[0]) 
+        pos[idx_mid] = 0.0
+        pos[idx_high] = ((bounds[2] - bounds[1]) - (bounds[2] - pos[idx_high])) / (bounds[2] - bounds[1])  
+        pos *= (self.Dr + self.w_beam) / 2
+        return pos
 
     # Convert dB to linear scale
     def db_2_lin(self, val):
@@ -222,14 +210,6 @@ class Signal_simulation:
             state[-1] = new_bit  # Insert new bit
         return signal
 
-    # Calculate time-variant loss: jitter-induced scintillation
-    def sample_xy(self, std, la, len):
-        theta_x = np.random.normal(0, std, len)
-        theta_y = np.random.normal(0, std, len)
-        x = np.tan(theta_x) * la
-        y = np.tan(theta_y) * la
-        return x, y
-
     def butt_filt(self, fs, fc, x, y):
         # FILTER #
         # Normalize frequency
@@ -243,14 +223,36 @@ class Signal_simulation:
         y_f = signal.lfilter(b, a, y)
         return x_f, y_f
 
-    def intensity_function(self, x_f, y_f, lam, theta_div, n, z):
-        # Substitute in intensity function
-        r = np.sqrt(x_f ** 2 + y_f ** 2)
+    def pj_loss(self, x_f, y_f, lam, theta_div, n, res=100):
         w_0 = lam / (theta_div * np.pi * n)
-        z_R = np.pi * w_0 ** 2 * n / lam
-        w = w_0 * np.sqrt(1 + (z / z_R) ** 2)
-        L_pj = (w_0 / w) ** 2 * np.exp(-2 * r ** 2 / w ** 2)
-        return L_pj
+    
+        def gauss_beam(x, y):
+            r = np.sqrt(x ** 2 + y ** 2)
+            return (w_0 / self.w_beam) ** 2 * np.exp(-2 * r ** 2 / self.w_beam ** 2)
+
+        R_det = self.Dr / 2
+        dx = dy = None
+
+        losses = []
+
+        for x_f_i, y_f_i in zip(np.ravel(x_f), np.ravel(y_f)):
+            x_grid = np.linspace(x_f_i - R_det, x_f_i + R_det, res)
+            y_grid = np.linspace(y_f_i - R_det, y_f_i + R_det, res)
+            X, Y = np.meshgrid(x_grid, y_grid)
+
+            if dx is None:
+                dx = x_grid[1] - x_grid[0]
+                dy = y_grid[1] - y_grid[0]
+
+            mask = (X - x_f_i) ** 2 + (Y - y_f_i) ** 2 <= R_det ** 2
+            intensity = gauss_beam(X, Y)
+            captured_power = np.sum(intensity[mask]) * dx * dy
+            total_power = (np.pi * w_0**2) / 2
+            L_pj = captured_power / total_power
+
+            losses.append(L_pj)
+
+        return np.array(losses).reshape(np.shape(x_f))
 
     # Generate AWGN noise for given SNR
     def gen_awgn(self, signal, snr_db):
@@ -274,10 +276,13 @@ class Signal_simulation:
         # Pointing jitter loss [dB]
         # Losses
 
-        array = self.sample_xy(self.sigma_pj, self.z, len(t))
-        array_f = self.butt_filt(self.fs, self.fc, array[0], array[1])
-        L_pj = self.intensity_function(array_f[0], array_f[1], self.lam, self.theta_div, self.n, self.z)
-        L_tot = self.db_2_lin(self.L_c) * L_pj  # Total loss [-]
+        t_2, x_bits, y_bits = self.read_FSM(self.csv_file)
+        x = self.bits_2_pos(x_bits, bounds=[22850, 36400, 45750])
+        y = self.bits_2_pos(y_bits, bounds=[22100, 33200, 44000])
+
+        x_f, y_f = self.butt_filt(self.fs, self.fc, x, y)
+        L_pj = self.pj_loss(x_f, y_f, self.lam, self.theta_div, self.n)
+        L_tot = self.db_2_lin(self.L_c * L_pj)  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal
 
         # Add Gaussian noise (AWGN)
