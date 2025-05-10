@@ -3,7 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tomllib as tom
 import scipy.signal as signal
-
+from scipy.special import iv 
+from scipy.special import erfc
+import pandas as pd
 class OpticalLinkBudget:
     def __init__(self, config, input_name, losses_name):
         self.config = config
@@ -143,7 +145,7 @@ class OpticalLinkBudget:
 
 # Simulating optical signal
 class Signal_simulation:
-    def __init__(self, config, inputs_link, inputs_signal, L_c):
+    def __init__(self, config, csv_file, inputs_link, inputs_signal, L_c):
         self.config = config
         link = self.config[inputs_link]
         signal = self.config[inputs_signal]
@@ -165,6 +167,38 @@ class Signal_simulation:
         self.fs = signal["fs"]
         self.fc = signal["fc"]
         self.n = signal["n"]
+        self.mu = signal["mu"]
+
+        # Check and load FSM Input
+        df = pd.read_csv(csv_file)
+        time = df["Time"].to_numpy()
+        x_values = df["X Value"].to_numpy()
+        y_values = df["Y Value"].to_numpy()
+        
+        # Centre of the detector
+        offset_x = 34000                 # Offset Gregoire and I have determined early on
+        offset_y = 32700                 # Offset Gregoire and I have determined early on
+
+        # Difference/offset from centre
+        x_diff = x_values - offset_x
+        y_diff = y_values - offset_y
+
+        # Convert to radian
+        x_rad = (x_diff / 65535) * (3 * np.pi/180)
+        y_rad = (y_diff / 65535) * (3 * np.pi/180)
+
+        # Convert to distance
+        x_dst = np.tan(x_rad) * 0.67
+        y_dst = np.tan(y_rad) * 0.67
+
+        plt.plot(time, x_dst, label='X-input')
+        plt.plot(time, y_dst, label='Y-input')
+        plt.title(f'FSM imposed offset from centre of detector [m]')
+        plt.xlabel(f'Approximate Time [s]')
+        plt.ylabel(f'Centre offset [m]')
+        plt.legend()
+        plt.grid()
+        plt.show()
 
     # Convert dB to linear scale
     def db_2_lin(self, val):
@@ -241,9 +275,7 @@ class Signal_simulation:
         # Losses
 
         array = self.sample_xy(self.sigma_pj, self.z, len(t))
-        
         array_f = self.butt_filt(self.fs, self.fc, array[0], array[1])
-        
         L_pj = self.intensity_function(array_f[0], array_f[1], self.lam, self.theta_div, self.n, self.z)
         L_tot = self.db_2_lin(self.L_c) * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal
@@ -299,5 +331,59 @@ class Signal_simulation:
 
         # Show all plots
         plt.tight_layout()
+        plt.show()
+        return 
+    
+    def pdfIGauss(self, lam, theta_div, n, sigmaPJ, mu):
+        """
+        Computes the probability density function (PDF) of the irradiance fluctuations 
+        for free-space optical communications with nonzero boresight pointing errors.
+
+        Parameters:
+        w0      : Beam waist (spot size at the receiver)
+        sigmaPJ : Pointing jitter standard deviation
+        mu      : Mean offset of the pointing error
+
+        Returns:
+        pdf : The probability density function values
+        hp  : The corresponding intensity fluctuation values (range from 0 to 1)
+        """
+        w_0 = lam / (theta_div * np.pi * n)
+        gamma = w_0 / (2 * sigmaPJ)  # Compute gamma
+        hp = np.linspace(0.1, 1, 1001)  # Define hp values from 0 to 1
+
+        # Compute the argument for the modified Bessel function
+        Z = (mu / sigmaPJ**2) * np.sqrt(-w_0**2 * np.log(hp) / 2)
+
+        # Compute the integral term using the modified Bessel function of the first kind (I0)
+        I = np.exp(-mu**2 / (2 * sigmaPJ**2)) * iv(0, Z)
+
+        # Compute the final PDF
+        pdf = gamma**2 * hp**(gamma**2 - 1) * I
+
+        return pdf, hp
+
+    def pdf2ber(self, pdf, u):
+        pdf = np.asarray(pdf).flatten()
+        u = np.asarray(u).flatten()
+
+        du = np.mean(np.diff(u))
+        SNR = np.linspace(0, 100, 1000)
+
+        integr = pdf * erfc(SNR[:, None] * u / (2 * np.sqrt(2)))
+        BER = 0.5 * np.sum(integr, axis=1) * du
+
+        return BER, SNR
+    
+    def pdf2ber_plot(self):
+        pdf, hp = self.pdfIGauss(self.lam, self.theta_div, self.n, self.sigma_pj, self.mu)
+        BER, SNR = self.pdf2ber(pdf, hp)
+        # Plot the BER curve
+        plt.semilogy(SNR, BER, label='Simulation')  # Log scale for BER
+        plt.xlabel("SNR (dB)")
+        plt.ylabel("BER")
+        plt.legend()
+        plt.title("Bit Error Rate vs. SNR")
+        plt.grid()
         plt.show()
         return
