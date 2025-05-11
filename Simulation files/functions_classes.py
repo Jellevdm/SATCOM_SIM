@@ -175,6 +175,14 @@ class Signal_simulation:
     def read_FSM(self, csv_file):
         df = pd.read_csv(csv_file, header=None).dropna().iloc[1:].astype(float)
         t, x_bit, y_bit = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
+        plt.plot(t[0:101], x_bit[0:101], label="X-axis")
+        plt.plot(t[0:101], y_bit[0:101], label="Y-axis")
+        plt.xlabel("Time [s]")
+        plt.ylabel("Position [DAC Value]")
+        plt.title("FSM input signal")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
         return t, x_bit, y_bit
 
     def bits_2_pos(self, bits, bounds):
