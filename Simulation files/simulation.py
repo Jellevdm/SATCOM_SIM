@@ -18,11 +18,19 @@ with open(config_path, 'rb') as f:          # 'rb' mode is required for tomllib
 
 # Load a specific input file
 #------
-# optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")         # Initialise optical link budget class for lecture example
+optical_link_lect = OpticalLinkBudget(config, "inputs_lec", "losses_lec")         # Initialise optical link budget class for lecture example
 optical_link_design = OpticalLinkBudget(config, "inputs_design", "losses_design")   # Initialise optical link budget class for our design                   
 #-----------------------------------------------
 
-# Results of link budget
+# Results of verification with lecture example
+#-----------------------------------------------
+print(f'Lecture example:')
+link_budget_des = optical_link_lect.compute_link_budget()
+for key in link_budget_des.keys():
+    print(f"{key}: {link_budget_des[key]:.4f}")
+#-----------------------------------------------
+print()
+# Results of link budget for our design
 #-----------------------------------------------
 print(f'Design example:')
 link_budget_des = optical_link_design.compute_link_budget()
@@ -30,8 +38,8 @@ for key in link_budget_des.keys():
     print(f"{key}: {link_budget_des[key]:.4f}")
 #-----------------------------------------------
 
-# Results of time simulation
-#-----------------------------------------------
+# # Results of time simulation
+# #-----------------------------------------------
 L_c = 10 ** (link_budget_des["Total losses [dB]"] / 10)  # Constant loss
 
 signal_sim = Signal_simulation(config, file_name, "inputs_design", "inputs_signal", L_c)     # Initialse time signal simulation class    

@@ -59,7 +59,7 @@ class OpticalLinkBudget:
         return -np.abs(10 * np.log10(optics_loss))
 
     @property 
-    #TODO: combine static and dynamic errors
+    #TODO: Some of the following losses are not used in the link budget
     def static_pointing_loss(self):
         """Static Pointing Loss"""
         theta_pe = self.r / self.L
@@ -121,7 +121,6 @@ class OpticalLinkBudget:
         link_margin = total_losses + P_tx_db - Rx_treshold_db
 
         P_rx_db = P_tx_db + total_losses
-        P_rx = (10 ** (P_rx_db / 10)) / 1000
 
         return {
             "Transmit laser power [dBm]": P_tx_db,
@@ -137,6 +136,8 @@ class OpticalLinkBudget:
             "Beam Spread loss [dB]": losses["Beam spread loss [dB]"],
             "Wavefront error loss [dB]": losses["Wavefront error loss [dB]"],
             "Rx Antenna gain [dB]": Grx,
+
+            "Attenuator loss [dB]": losses["Attenuator loss [dB]"],
 
             "Total losses [dB]": total_losses,
             "Link margin [dB]": link_margin,
@@ -165,7 +166,6 @@ class Signal_simulation:
         self.random = signal["random"]
         self.R_f = signal["R_f"]
         self.bitrate = signal["bitrate"]
-        self.t_end = signal["t_end"]
         self.fs = signal["fs"]
         self.fc = signal["fc"]
         self.n = signal["n"]
