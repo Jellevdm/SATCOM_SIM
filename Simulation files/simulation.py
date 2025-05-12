@@ -32,7 +32,7 @@ for key in link_budget_des.keys():
 
 # Results of time simulation
 #-----------------------------------------------
-L_c = 10 ** ((link_budget_des["Total losses [dB]"] - link_budget_des["Pointing jitter loss [dB]"]) / 10)  # Constant loss: all link budget losses except for (jitter-induced) scintillation [dB]
+L_c = 10 ** (link_budget_des["Total losses [dB]"] / 10)  # Constant loss
 
 signal_sim = Signal_simulation(config, file_name, "inputs_design", "inputs_signal", L_c)     # Initialse time signal simulation class    
 result_sim = signal_sim.generate_time_sig()                                            # Run the function for generating time signal at Tx and Rx

@@ -175,8 +175,8 @@ class Signal_simulation:
     def read_FSM(self, csv_file):
         df = pd.read_csv(csv_file, header=None).dropna().iloc[1:].astype(float)
         t, x_bit, y_bit = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
-        plt.plot(t[0:101], x_bit[0:101], label="X-axis")
-        plt.plot(t[0:101], y_bit[0:101], label="Y-axis")
+        plt.plot(t, x_bit, label="X-axis")
+        plt.plot(t, y_bit, label="Y-axis")
         plt.xlabel("Time [s]")
         plt.ylabel("Position [DAC Value]")
         plt.title("FSM input signal")
@@ -274,23 +274,28 @@ class Signal_simulation:
         if self.random == False:
             np.random.seed(0)
 
+        t_fsm, x_bits, y_bits = self.read_FSM(self.csv_file)
+
         # Generate PRBS transmitter signal
-        n_bits = self.bitrate * self.t_end
+        n_bits = self.bitrate * int(t_fsm[-1])
         tx_bits = self.gen_prbs(n_bits)  # PRBS generator
         tx_signal = np.multiply(np.repeat(tx_bits, self.R_f), self.P_l)  # Transmitted signal
-        t = np.linspace(0, self.t_end, len(tx_signal))  # Time steps
+        t = np.linspace(0, t_fsm[-1], len(tx_signal))  # Time steps
 
         # Attenuate signal: include losses
         # Pointing jitter loss [dB]
         # Losses
 
-        t_2, x_bits, y_bits = self.read_FSM(self.csv_file)
-        x = self.bits_2_pos(x_bits, bounds=[22850, 36400, 45750])
-        y = self.bits_2_pos(y_bits, bounds=[22100, 33200, 44000])
+        # Interpolate FSM positions over the higher-resolution time vector
+        t_fsm_interp = np.linspace(0, t_fsm[-1], len(tx_signal))  # match full signal length
+        x_raw = self.bits_2_pos(x_bits, bounds=[22850, 36400, 45750])
+        y_raw = self.bits_2_pos(y_bits, bounds=[22100, 33200, 44000])
+        x = np.interp(t_fsm_interp, t_fsm, x_raw)
+        y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
         x_f, y_f = self.butt_filt(self.fs, self.fc, x, y)
         L_pj = self.pj_loss(x_f, y_f, self.lam, self.theta_div, self.n)
-        L_tot = self.db_2_lin(self.L_c * L_pj)  # Total loss [-]
+        L_tot = self.L_c * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal
 
         # Add Gaussian noise (AWGN)
@@ -341,6 +346,17 @@ class Signal_simulation:
         plt.title("Histogram of received power")
         plt.legend()
         plt.grid(True)
+
+        # Number of bits you want to visualize clearly
+        n_bits_to_plot = 10
+        samples_to_plot = n_bits_to_plot * self.R_f
+
+        # Zoom in on a portion of the signal for visibility
+        plt.subplot(3, 1, 1)
+        plt.xlim([t[0], t[samples_to_plot]])
+
+        plt.subplot(3, 1, 2)
+        plt.xlim([t[0], t[samples_to_plot]])
 
         # Show all plots
         plt.tight_layout()
