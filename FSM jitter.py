@@ -92,7 +92,6 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
 
     while running_flag():
         noise_value = np.random.normal(mean, std)  # Generate white noise value
-        #TODO: From noise statistic value to DAC value for FSM, right now still scaling values
         if channel == 0:  # X Channel
             noise_value = int(max(min((offset_x + max_amp_x * noise_value), min_x2), min_x1))            # Cap it at max amplitude
             global_time_x += 0.01
@@ -107,7 +106,7 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
             queue.put((global_time_y, noise_value))
             y_writer.writerow([global_time_y, noise_value])  # Log Y data
         
-        time.sleep(0.005)  # Update rate: 10 ms
+        time.sleep(0.001)  # Update rate: 10 ms
 
 # Functions to start and stop noise for X and Y axes
 def start_x_noise():
