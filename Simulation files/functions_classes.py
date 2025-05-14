@@ -117,7 +117,7 @@ class OpticalLinkBudget:
         total_losses = sum(losses.values()) + Gtx + Grx
 
         P_tx_db = 10 * np.log10(self.Tx_power * 1000)
-        Rx_treshold_db = 10 * np.log10(self.Rx_treshold * 1000)
+        Rx_treshold_db = 10 * np.log10((self.Rx_treshold *1e-3)**2/1e-3)
         link_margin = total_losses + P_tx_db - Rx_treshold_db
 
         P_rx_db = P_tx_db + total_losses
