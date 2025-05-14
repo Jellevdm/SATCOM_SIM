@@ -7,6 +7,9 @@ import csv
 import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import os
+
+os.chdir('FSM files') 
 
 # ===========================
 # Configuration and Setup
