@@ -8,9 +8,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from collections import deque
 import queue
 import csv
-import os
-
-os.chdir('FSM files')   
 
 # Decrease this to make the FSM movement smoother
 update_time = 0.0005
