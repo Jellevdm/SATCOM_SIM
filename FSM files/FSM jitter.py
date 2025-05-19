@@ -152,13 +152,21 @@ def update_plot():
         time_data_y.append(current_time)
         noise_data_y.append(sine_value)
 
+    # Define DAC limits for plotting purposes only
+    min_x1, min_x2 = 0x7FBC, 0xAFC8  # X limits (32700 - 45000)
+    min_y1, min_y2 = 0x5DC0, 0xA53C  # Y limits (24000 - 42300)
+
+    # Detector center
+    offset_x = 0x8F5C                # (36700) Offset Gregoire and I have determined early on
+    offset_y = 0x81B0                # (33200) Offset Gregoire and I have determined early on
+
     # Update individual X and Y noise plots
     ax[0,0].clear()
     ax[0,0].plot(time_data_x, noise_data_x, 'r-', label="X Signal")
     ax[0,0].set_title("X Noise signal")
     ax[0,0].set_xlabel(f'Running time')
     ax[0,0].set_ylabel(f'DAC value')
-    ax[0,0].set_ylim(0x7FBC, 0xAFC8)
+    ax[0,0].set_ylim(min_x1, min_x2)
     ax[0,0].legend()
 
     ax[1,0].clear()
@@ -166,18 +174,18 @@ def update_plot():
     ax[1,0].set_title("Y Noise Signal")
     ax[1,0].set_xlabel(f'Running time')
     ax[1,0].set_ylabel(f'DAC value')
-    ax[1,0].set_ylim(0x61A8, 0xA53C)
+    ax[1,0].set_ylim(min_y1, min_y2)
     ax[1,0].legend()
 
     if np.shape(noise_data_x) == np.shape(noise_data_y):
         ax[0,1].clear()
         ax[0,1].scatter(noise_data_x, noise_data_y, label='Offset due to noise')
-        ax[0,1].scatter(0x8F5C, 0x81B0, label='Mirror centre', color='red')
+        ax[0,1].scatter(offset_x, offset_y, label='Mirror centre', color='red')
         ax[0,1].set_title("FSM Pattern")
         ax[0,1].set_xlabel(f'X DAC Value')
-        ax[0,1].set_xlim(0x7FBC, 0xAFC8)
+        ax[0,1].set_xlim(min_x1, min_x2)
         ax[0,1].set_ylabel(f'Y DAC Value')
-        ax[0,1].set_ylim(0x61A8, 0xA53C)
+        ax[0,1].set_ylim(min_y1, min_y2)
 
     # Redraw the figure
     canvas.draw()
