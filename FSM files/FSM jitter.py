@@ -79,11 +79,11 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
     global global_time_x, global_time_y
 
     # Define DAC limits
-    min_x1, min_x2 = 0x5622, 0xB2B6  # X limits (22850 - 45750)
-    min_y1, min_y2 = 0x5654, 0xABE0  # Y limits (22100 - 44000)
+    min_x1, min_x2 = 0x7FBC, 0xAFC8  # X limits (32700 - 45000)
+    min_y1, min_y2 = 0x5DC0, 0xA53C  # Y limits (24000 - 42300)
 
     # Detector center
-    offset_x = 0x8F5C                # (36400/36700 prbs) Offset Gregoire and I have determined early on
+    offset_x = 0x8F5C                # (36700) Offset Gregoire and I have determined early on
     offset_y = 0x81B0                # (33200) Offset Gregoire and I have determined early on
 
     # Maximum Amplitude Ranges
@@ -106,7 +106,7 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
             queue.put((global_time_y, noise_value))
             y_writer.writerow([global_time_y, noise_value])  # Log Y data
         
-        time.sleep(0.001)  # Update rate: 10 ms
+        time.sleep(0.001)  # Update rate: trying to have 1 ms
 
 # Functions to start and stop noise for X and Y axes
 def start_x_noise():
@@ -158,7 +158,7 @@ def update_plot():
     ax[0,0].set_title("X Noise signal")
     ax[0,0].set_xlabel(f'Running time')
     ax[0,0].set_ylabel(f'DAC value')
-    ax[0,0].set_ylim(0x5622, 0xB2B6)
+    ax[0,0].set_ylim(0x7FBC, 0xAFC8)
     ax[0,0].legend()
 
     ax[1,0].clear()
@@ -166,18 +166,18 @@ def update_plot():
     ax[1,0].set_title("Y Noise Signal")
     ax[1,0].set_xlabel(f'Running time')
     ax[1,0].set_ylabel(f'DAC value')
-    ax[1,0].set_ylim(0x5654, 0xABE0)
+    ax[1,0].set_ylim(0x61A8, 0xA53C)
     ax[1,0].legend()
 
     if np.shape(noise_data_x) == np.shape(noise_data_y):
         ax[0,1].clear()
         ax[0,1].scatter(noise_data_x, noise_data_y, label='Offset due to noise')
-        ax[0,1].scatter(0x8E30, 0x81B0, label='Mirror centre', color='red')
+        ax[0,1].scatter(0x8F5C, 0x81B0, label='Mirror centre', color='red')
         ax[0,1].set_title("FSM Pattern")
         ax[0,1].set_xlabel(f'X DAC Value')
-        ax[0,1].set_xlim(0x5622, 0xB2B6)
+        ax[0,1].set_xlim(0x7FBC, 0xAFC8)
         ax[0,1].set_ylabel(f'Y DAC Value')
-        ax[0,1].set_ylim(0x5654, 0xABE0)
+        ax[0,1].set_ylim(0x61A8, 0xA53C)
 
     # Redraw the figure
     canvas.draw()

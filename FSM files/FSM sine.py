@@ -60,7 +60,7 @@ def sine_wave_control_x():
     global running_x
     t = 0
     # TODO: implement offset / phase shift
-    offset = 0x7FFF
+    offset = 0x8F5C
 
     while running_x:
         try:
@@ -85,7 +85,7 @@ def sine_wave_control_y():
     """This is the control function for the sine wave in y"""
     global running_y
     t = 0
-    offset = 0x7FFF
+    offset = 0x81B0
     # TODO: implement offset / phase shift
 
     while running_y:
