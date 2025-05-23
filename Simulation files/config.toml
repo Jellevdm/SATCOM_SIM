@@ -27,7 +27,7 @@ link = "down"                                                       # "up" for u
 
 [inputs_signal]
 random = false                                                      # Switch: if False, use seed 0
-R_f = 10                                                            # Frequency ratio: ratio between transmitter frequency and random frequency (visual)
+R_f = 1                                                            # Frequency ratio: ratio between transmitter frequency and random frequency (visual)
 bitrate = 25                                                        # Transmitted bits per second [-]
 fs = 1000
 fc = 100

@@ -7,7 +7,7 @@ import tomllib as tom
 
 from functions_classes import *
 
-file_name = "FSM inputs/04-30-inputs/04_30-fsm-std(0.1)-mean(0.1).csv"                   # Change this to read different inputs
+file_name = "FSM inputs/04-30-inputs/04_30-fsm-std(0.1)-mean(0).csv"                   # Change this to read different inputs
 os.chdir('Simulation files')                                                               # Change working directory to the folder where the script is located
 
 # Configure toml file and initialise link budget
