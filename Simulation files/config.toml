@@ -33,7 +33,7 @@ fs = 1000
 fc = 100
 n = 1                                                               # Air refractive index [-]
 snr = 5                                                             # Signal-to-noise ratio [dB]
-mu = 0                                                              # pdf2ber mean
+mu = 0.0001                                                              # pdf2ber mean
                                                                                                      
 [losses_design]
 optics_loss = true

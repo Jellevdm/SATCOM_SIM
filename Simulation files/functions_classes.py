@@ -396,7 +396,6 @@ class Signal_simulation:
 
         # Compute the final PDF
         pdf = gamma**2 * hp**(gamma**2 - 1) * I
-
         return pdf, hp
 
     def pdf2ber(self, pdf, u):
@@ -414,6 +413,16 @@ class Signal_simulation:
     def pdf2ber_plot(self):
         pdf, hp = self.pdfIGauss(self.lam, self.theta_div, self.n, self.sigma_pj, self.mu)
         BER, SNR = self.pdf2ber(pdf, hp)
+
+        # Plot PDF
+        plt.plot(hp, pdf, label='Simulation')  # Log scale for BER
+        plt.xlabel("Normalized Irradiance (h')")
+        plt.ylabel("PDF")
+        plt.legend()
+        plt.title("PDF of Irradiance Fluctuations")
+        plt.grid()
+        plt.show()
+
         # Plot the BER curve
         plt.semilogy(SNR, BER, label='Simulation')  # Log scale for BER
         plt.xlabel("SNR (dB)")
