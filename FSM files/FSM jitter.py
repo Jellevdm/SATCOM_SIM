@@ -86,8 +86,8 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
     min_y1, min_y2 = 0x5654, 0xABE0  # Y limits (22100 - 44000)
 
     # Detector center
-    offset_x = 0x8F5C                # (36400/36700 prbs) Offset Gregoire and I have determined early on
-    offset_y = 0x81B0                # (33200) Offset Gregoire and I have determined early on
+    offset_x = 0x8F5C                # (36700 prbs)
+    offset_y = 0x81B0                # (33200)
 
     # Maximum Amplitude Ranges
     max_amp_x = min((min_x2-offset_x), (offset_x-min_x1))       # Due to slight misalignment we choose which maximum amplitude we can use
