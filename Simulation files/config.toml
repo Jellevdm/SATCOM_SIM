@@ -19,7 +19,7 @@ p_out = 1e-3                                                        # Scintillat
 sigma_i = 0.47                                                      # Scintillation index
 r0 = 0.02                                                           # Fried parameter (m)
 eta_rx = 0.8                                                        # Receiver efficiency
-Rx_treshold = 4                                                # Receiver threshold noise floor (mV)
+Rx_treshold = 4                                                     # Receiver threshold noise floor (mV)
 n_nom = 0.8                                                         # Nominal coupling efficiency
 attenuator = -10                                                    # Attenuator loss (dB)
 w_beam = 0.0009688                                                  # beamwidth at the detector [m]
@@ -32,7 +32,7 @@ bitrate = 25                                                        # Transmitte
 fs = 1000
 fc = 100
 n = 1                                                               # Air refractive index [-]
-snr = 57                                                             # Signal-to-noise ratio [dB]
+snr = 5                                                             # Signal-to-noise ratio [dB]
 mu = 0                                                              # pdf2ber mean
                                                                                                      
 [losses_design]
