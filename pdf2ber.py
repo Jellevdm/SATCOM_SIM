@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from scipy.special import iv        # iv is the modified Bessel function of the first kind, # can be used to check against the simulation to determine correctness of the simulation.
                       
 
-w0 = 0.9688e-3
-sigma_pj = 3.29e-5
+w0 = 0.0009688
+sigma_pj = 2e-3
 mu = 0.1e-3
 
 def pdfIGauss(w0, sigmaPJ, mu):

@@ -392,7 +392,7 @@ class Signal_simulation:
         plt.show()
         return 
     
-    def pdfIGauss(self, lam, theta_div, n, sigmaPJ, mu):
+    def pdfIGauss(self, w_0, sigmaPJ, mu):
         """
         Computes the probability density function (PDF) of the irradiance fluctuations 
         for free-space optical communications with nonzero boresight pointing errors.
@@ -406,7 +406,7 @@ class Signal_simulation:
         pdf : The probability density function values
         hp  : The corresponding intensity fluctuation values (range from 0 to 1)
         """
-        w_0 = lam / (theta_div * np.pi * n)
+        # w_0 = lam / (theta_div * np.pi * n)
         gamma = w_0 / (2 * sigmaPJ)  # Compute gamma
         hp = np.linspace(0.1, 1, 1001)  # Define hp values from 0 to 1
 
@@ -433,7 +433,7 @@ class Signal_simulation:
         return BER, SNR
     
     def pdf2ber_plot(self):
-        pdf, hp = self.pdfIGauss(self.lam, self.theta_div, self.n, self.sigma_pj, self.mu)
+        pdf, hp = self.pdfIGauss(self.w_beam, self.sigma_pj, self.mu)
         BER, SNR = self.pdf2ber(pdf, hp)
 
         # Plot PDF
