@@ -5,6 +5,7 @@ import tomllib as tom
 import scipy.signal as signal
 from scipy.special import iv 
 from scipy.special import erfc
+from scipy.integrate import simpson
 import pandas as pd
 class OpticalLinkBudget:
     def __init__(self, config, input_name, losses_name):
@@ -418,6 +419,7 @@ class Signal_simulation:
 
         # Compute the final PDF
         pdf = gamma**2 * hp**(gamma**2 - 1) * I
+        pdf /= simpson(pdf, hp)     # Normalize the PDF
         return pdf, hp
 
     def pdf2ber(self, pdf, u):
@@ -432,9 +434,15 @@ class Signal_simulation:
 
         return BER, SNR
     
-    def pdf2ber_plot(self):
+    def pdf2ber_plot(self, a, b):
         pdf, hp = self.pdfIGauss(self.w_beam, self.sigma_pj, self.mu)
         BER, SNR = self.pdf2ber(pdf, hp)
+        
+        if a < hp[0] or b > hp[-1] or a>=b:
+            raise ValueError("Invalid range for hp. Ensure that a < b and a, b are within the range of hp.")
+        mask = (hp >= a) & (hp <= b)
+        probability = simpson(pdf[mask], hp[mask])
+        print(f"Probability that h' is in [{a},{b}]: {probability:.4f}")
 
         # Plot PDF
         plt.plot(hp, pdf, label='Simulation')  # Log scale for BER
