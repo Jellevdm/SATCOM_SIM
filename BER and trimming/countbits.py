@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 import csv
 
-
+header = ["std", "mean", "analysed bits"]
+rows = []
 
 def ber(std, mean, ndf=0, threshold=0.4):
 
@@ -63,40 +64,26 @@ def ber(std, mean, ndf=0, threshold=0.4):
         ee.append(np.bitwise_xor(bb1[i], bb2[i]))
 
     return bb1, bb2, ee
-    
+
+for std in [0.1, 0.2, 0.3, 0.4, 0.5]:
+    for mean in [0, 0.1, 0.2, 0.3, 0.4]:
+        THRESHOLD = 0.1
+        bb1, bb2, ee = ber(std, mean, threshold=THRESHOLD)
+
+        n_errors = ee.count(1)
+        n_correct = ee.count(0)
+        total = len(ee)
+        ratio = n_errors / total
+
+        print(f"theshold: {THRESHOLD}, std: {std}, mean: {mean} --- {n_errors} errors out of {total} bits, ==== BER: {ratio} ====")
+
+        values = [std, mean, total]
+        row = [str(item) for item in values]
+        # print(row)
+        rows.append(row)
 
 
-
-
-filename = "BER and trimming/results.csv"
-
-header = ["std", "mean", "threshold", "BER"]
-
-rows = []
-
-for t in range(1, 17):
-    THRESHOLD = t/20
-    for std in [0.1, 0.2, 0.3, 0.4, 0.5]:
-        for mean in [0, 0.1, 0.2, 0.3, 0.4]:
-            bb1, bb2, ee = ber(std, mean, threshold=THRESHOLD)
-
-            n_errors = ee.count(1)
-            n_correct = ee.count(0)
-            total = len(ee)
-            ratio = n_errors / total
-
-            # print(f"theshold: {THRESHOLD}, std: {std}, mean: {mean} --- {n_errors} errors out of {total} bits, ==== BER: {ratio} ====")
-
-            values = [std, mean, THRESHOLD, ratio]
-            row = [str(item) for item in values]
-            print(row)
-            rows.append(row)
-
-with open(filename, mode='w', newline='', encoding='utf-8') as outfile:
+with open("used_bits.csv", mode='w', newline='', encoding='utf-8') as outfile:
     writer = csv.writer(outfile, delimiter=',')
     writer.writerow(header)
     writer.writerows(rows)
-
-    
-                
-        
