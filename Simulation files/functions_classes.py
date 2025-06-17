@@ -175,8 +175,8 @@ class Signal_simulation:
 
     def read_FSM(self, csv_file):
         df = pd.read_csv(csv_file, header=None).dropna().iloc[1:].astype(float)
-        t, x_bit, y_bit = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
-        plt.plot(t, x_bit, label="X-axis")
+        t, x_dac, y_dac = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
+        plt.plot(t, x_dac, label="X-axis")
         plt.xlabel("Time [s]")
         plt.ylabel("Position [DAC Value]")
         plt.title("FSM input signal")
@@ -184,14 +184,14 @@ class Signal_simulation:
         plt.grid(True)
         plt.show()
 
-        plt.plot(t, y_bit, label="Y-axis", color='orange')
+        plt.plot(t, y_dac, label="Y-axis", color='orange')
         plt.xlabel("Time [s]")
         plt.ylabel("Position [DAC Value]")
         plt.title("FSM input signal")
         plt.legend()
         plt.grid(True)
         plt.show()
-        return t, x_bit, y_bit
+        return t, x_dac, y_dac
 
     def bits_2_pos(self, bits, bounds):
         pos = bits.copy()
@@ -276,7 +276,7 @@ class Signal_simulation:
         return noise
     
     def generate_time_sig_square(self):
-        t_fsm, x_bits, y_bits = self.read_FSM(self.csv_file)
+        t_fsm, x_dac, y_dac = self.read_FSM(self.csv_file)
 
         n_bits = self.bitrate * int(t_fsm[-1])
         tx_bits = self.gen_square(n_bits)  # Square wave generator
@@ -285,8 +285,8 @@ class Signal_simulation:
 
         # Interpolate FSM positions over the higher-resolution time vector
         t_fsm_interp = np.linspace(0, t_fsm[-1], len(tx_signal))  # match full signal length
-        x_raw = self.bits_2_pos(x_bits, bounds=[22850, 36400, 45750])
-        y_raw = self.bits_2_pos(y_bits, bounds=[22100, 33200, 44000])
+        x_raw = self.bits_2_pos(x_dac, bounds=[22850, 36400, 45750])
+        y_raw = self.bits_2_pos(y_dac, bounds=[22100, 33200, 44000])
         x = np.interp(t_fsm_interp, t_fsm, x_raw)
         y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
@@ -389,7 +389,7 @@ class Signal_simulation:
         if self.random == False:
             np.random.seed(0)
 
-        t_fsm, x_bits, y_bits = self.read_FSM(self.csv_file)
+        t_fsm, x_dac, y_dac = self.read_FSM(self.csv_file)
 
         # Generate PRBS transmitter signal
         n_bits = self.bitrate * int(t_fsm[-1])
@@ -403,8 +403,8 @@ class Signal_simulation:
 
         # Interpolate FSM positions over the higher-resolution time vector
         t_fsm_interp = np.linspace(0, t_fsm[-1], len(tx_signal))  # match full signal length
-        x_raw = self.bits_2_pos(x_bits, bounds=[22850, 36400, 45750])
-        y_raw = self.bits_2_pos(y_bits, bounds=[22100, 33200, 44000])
+        x_raw = self.bits_2_pos(x_dac, bounds=[22850, 36400, 45750])
+        y_raw = self.bits_2_pos(y_dac, bounds=[22100, 33200, 44000])
         x = np.interp(t_fsm_interp, t_fsm, x_raw)
         y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
