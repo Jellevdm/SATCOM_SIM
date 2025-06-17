@@ -280,7 +280,7 @@ class Signal_simulation:
 
         n_bits = self.bitrate * int(t_fsm[-1])
         tx_bits = self.gen_square(n_bits)  # Square wave generator
-        tx_signal = np.multiply(np.repeat(tx_bits, self.R_f), 2)  # Transmitted signal
+        tx_signal = np.multiply(np.repeat(tx_bits, self.R_f), self.P_l)  # Transmitted signal
         t = np.linspace(0, t_fsm[-1], len(tx_signal))  # Time steps
 
         # Interpolate FSM positions over the higher-resolution time vector
