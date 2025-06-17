@@ -408,7 +408,7 @@ class Signal_simulation:
         hp  : The corresponding intensity fluctuation values (range from 0 to 1)
         """
         w_0 = lam / (theta_div * np.pi * n)
-        print(w_0)
+   
         gamma = w_0 / (2 * sigmaPJ)  # Compute gamma
         hp = np.linspace(0.1, 1, 1001)  # Define hp values from 0 to 1
 
@@ -420,7 +420,7 @@ class Signal_simulation:
 
         # Compute the final PDF
         pdf = gamma**2 * hp**(gamma**2 - 1) * I
-        pdf /= simpson(pdf, hp)     # Normalize the PDF
+        pdf /= simpson(pdf)     # Normalize the PDF
         return pdf, hp
 
     def pdf2ber(self, pdf, u):
@@ -442,7 +442,7 @@ class Signal_simulation:
         if a < hp[0] or b > hp[-1] or a>=b:
             raise ValueError("Invalid range for hp. Ensure that a < b and a, b are within the range of hp.")
         mask = (hp >= a) & (hp <= b)
-        probability = simpson(pdf[mask], hp[mask])
+        probability = simpson(pdf[mask])
         print(f"Probability that h' is in [{a},{b}]: {probability:.4f}")
 
         # Plot PDF
