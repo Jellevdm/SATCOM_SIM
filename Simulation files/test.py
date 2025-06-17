@@ -8,6 +8,18 @@ from scipy.special import erfc
 from scipy.integrate import simpson
 import pandas as pd
 
+def bits_2_pos(self, bits, bounds):
+    pos = bits.copy()
+    idx_low = np.where(pos < bounds[1])
+    idx_mid = np.where(pos == bounds[1])
+    idx_high = np.where(pos > bounds[1])
+    pos[idx_low] = -1 * ((bounds[1] - bounds[0]) - (pos[idx_low] - bounds[0])) / (bounds[1] - bounds[0]) 
+    pos[idx_mid] = 0.0
+    pos[idx_high] = ((bounds[2] - bounds[1]) - (bounds[2] - pos[idx_high])) / (bounds[2] - bounds[1])  
+    pos *= (self.Dr + self.w_beam) / 2
+    return pos
+
+
 def pj_loss(self, x_f, y_f, lam, theta_div, n, res=100):
     w_0 = lam / (theta_div * np.pi * n)
     
