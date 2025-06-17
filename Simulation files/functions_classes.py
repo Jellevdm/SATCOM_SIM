@@ -280,7 +280,7 @@ class Signal_simulation:
 
         n_bits = self.bitrate * int(t_fsm[-1])
         tx_bits = self.gen_square(n_bits)  # Square wave generator
-        tx_signal = np.multiply(np.repeat(tx_bits, self.R_f), self.P_l)  # Transmitted signal
+        tx_signal = np.multiply(np.repeat(tx_bits, self.R_f), 2)  # Transmitted signal
         t = np.linspace(0, t_fsm[-1], len(tx_signal))  # Time steps
 
         # Interpolate FSM positions over the higher-resolution time vector
@@ -291,7 +291,6 @@ class Signal_simulation:
         y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
         L_pj = self.pj_loss(x, y, self.lam, self.theta_div, self.n)
-        print(L_pj)
         #TODO: change correct losses
         # L_tot = self.L_c * L_pj  # Total loss [-]
         L_tot = 1 * L_pj
