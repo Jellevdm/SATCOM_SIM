@@ -278,7 +278,10 @@ class Signal_simulation:
         noise = np.random.normal(0, np.sqrt(noise_power), signal.shape)  # Generate Gaussian noise
         return noise
     
-    def generate_time_sig(self):
+    def generate_time_sig_sqaure(self):
+        return
+
+    def generate_time_sig_prbs(self):
         if self.random == False:
             np.random.seed(0)
 
@@ -301,8 +304,8 @@ class Signal_simulation:
         x = np.interp(t_fsm_interp, t_fsm, x_raw)
         y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
-        x_f, y_f = self.butt_filt(self.fs, self.fc, x, y)
-        L_pj = self.pj_loss(x_f, y_f, self.lam, self.theta_div, self.n)
+        # x_f, y_f = self.butt_filt(self.fs, self.fc, x, y) removed butterworth filter
+        L_pj = self.pj_loss(x, y, self.lam, self.theta_div, self.n)
         L_tot = self.L_c * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal
 
@@ -408,7 +411,7 @@ class Signal_simulation:
         hp  : The corresponding intensity fluctuation values (range from 0 to 1)
         """
         w_0 = lam / (theta_div * np.pi * n)
-        print(w_0)
+   
         gamma = w_0 / (2 * sigmaPJ)  # Compute gamma
         hp = np.linspace(0.1, 1, 1001)  # Define hp values from 0 to 1
 
@@ -420,7 +423,7 @@ class Signal_simulation:
 
         # Compute the final PDF
         pdf = gamma**2 * hp**(gamma**2 - 1) * I
-        pdf /= simpson(pdf, hp)     # Normalize the PDF
+        pdf /= simpson(pdf)     # Normalize the PDF
         return pdf, hp
 
     def pdf2ber(self, pdf, u):
@@ -442,7 +445,7 @@ class Signal_simulation:
         if a < hp[0] or b > hp[-1] or a>=b:
             raise ValueError("Invalid range for hp. Ensure that a < b and a, b are within the range of hp.")
         mask = (hp >= a) & (hp <= b)
-        probability = simpson(pdf[mask], hp[mask])
+        probability = simpson(pdf[mask])
         print(f"Probability that h' is in [{a},{b}]: {probability:.4f}")
 
         # Plot PDF
