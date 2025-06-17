@@ -278,7 +278,10 @@ class Signal_simulation:
         noise = np.random.normal(0, np.sqrt(noise_power), signal.shape)  # Generate Gaussian noise
         return noise
     
-    def generate_time_sig(self):
+    def generate_time_sig_sqaure(self):
+        return
+
+    def generate_time_sig_prbs(self):
         if self.random == False:
             np.random.seed(0)
 
@@ -301,8 +304,8 @@ class Signal_simulation:
         x = np.interp(t_fsm_interp, t_fsm, x_raw)
         y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
-        x_f, y_f = self.butt_filt(self.fs, self.fc, x, y)
-        L_pj = self.pj_loss(x_f, y_f, self.lam, self.theta_div, self.n)
+        # x_f, y_f = self.butt_filt(self.fs, self.fc, x, y) removed butterworth filter
+        L_pj = self.pj_loss(x, y, self.lam, self.theta_div, self.n)
         L_tot = self.L_c * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal
 
