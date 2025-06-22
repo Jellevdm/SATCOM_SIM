@@ -115,6 +115,7 @@ class OpticalLinkBudget:
         }
 
         # Sum all included losses
+        total_const = sum(losses.values()) 
         total_losses = sum(losses.values()) + Gtx + Grx
 
         P_tx_db = 10 * np.log10(self.Tx_power * 1000)
@@ -140,7 +141,8 @@ class OpticalLinkBudget:
 
             "Attenuator loss [dB]": losses["Attenuator loss [dB]"],
 
-            "Total losses [dB]": total_losses,
+            "Total losses [dB]": total_losses, #With gains
+            "Total losses const [db]": total_const,     #just the constant losses
             "Link margin [dB]": link_margin,
             "Rx treshold [dBm]": Rx_treshold_db,
         }
@@ -176,21 +178,21 @@ class Signal_simulation:
     def read_FSM(self, csv_file):
         df = pd.read_csv(csv_file, header=None).dropna().iloc[1:].astype(float)
         t, x_dac, y_dac = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
-        plt.plot(t, x_dac, label="X-axis")
-        plt.xlabel("Time [s]")
-        plt.ylabel("Position [DAC Value]")
-        plt.title("FSM input signal")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        # plt.plot(t, x_dac, label="X-axis")
+        # plt.xlabel("Time [s]")
+        # plt.ylabel("Position [DAC Value]")
+        # plt.title("FSM input signal")
+        # plt.legend()
+        # plt.grid(True)
+        # plt.show()
 
-        plt.plot(t, y_dac, label="Y-axis", color='orange')
-        plt.xlabel("Time [s]")
-        plt.ylabel("Position [DAC Value]")
-        plt.title("FSM input signal")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        # plt.plot(t, y_dac, label="Y-axis", color='orange')
+        # plt.xlabel("Time [s]")
+        # plt.ylabel("Position [DAC Value]")
+        # plt.title("FSM input signal")
+        # plt.legend()
+        # plt.grid(True)
+        # plt.show()
         return t, x_dac, y_dac
 
     def bits_2_pos(self, bits, bounds):
@@ -236,7 +238,8 @@ class Signal_simulation:
         return signal
 
     def pj_loss(self, x_f, y_f, lam, theta_div, n, res=100):
-        # Calculate the beam waist (w0) at the focus (assuming beam is focused by lens to its waist)
+        # Calculate the beam waist (w0) at the focus of the last lens (assuming beam is focused by lens to its waist) Detector 
+        # is positioned at the focal point of the last lens.
         w_0 = lam / (theta_div * np.pi * n)  # [m]
 
         # Define a 2D Gaussian beam intensity profile centered at (0,0)
@@ -281,14 +284,12 @@ class Signal_simulation:
         return np.array(losses).reshape(np.shape(x_f))
 
 
-
     # Generate AWGN noise for given SNR
-    #TODO: change AWGN to constant noise floor of the detector
-    def gen_awgn(self, signal, snr_db):
-        signal_power = np.mean(signal ** 2)  # Compute signal power
-        snr_linear = self.db_2_lin(snr_db)  # Convert SNR from dB to linear scale
-        noise_power = signal_power / snr_linear  # Compute noise power
-        noise = np.random.normal(0, np.sqrt(noise_power), signal.shape)  # Generate Gaussian noise
+    def gen_awgn(self, signal):
+        noise_power = 4.257362e-8       #Based on 4 mv noise floor with 1.495 mv rms voltage and 50 ohm transimpendance
+        noise_std = np.sqrt(noise_power)
+        num_samples = len(signal)
+        noise = np.random.normal(0, noise_std, num_samples)
         return noise
     
     def generate_time_sig_square(self):
@@ -308,99 +309,36 @@ class Signal_simulation:
 
         L_pj = self.pj_loss(x, y, self.lam, self.theta_div, self.n)
 
-        #TODO: change correct losses
-        # L_tot = self.L_c * L_pj  # Total loss [-]
-        L_tot = 1 * L_pj
+        L_tot = self.L_c * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal
 
         # Add Gaussian noise (AWGN)
-        #TODO: Rewrite these functions
-        awgn = self.gen_awgn(tx_signal_loss, self.snr)
-        awgn = 0
+        awgn = self.gen_awgn(tx_signal_loss)
         rx_signal = (tx_signal_loss + awgn)
 
-        # Apply on-off keying
-        threshold = np.mean(rx_signal[::self.R_f])
-        rx_bits = (rx_signal[::self.R_f] > threshold).astype(int)
-        bit_errors = np.sum(tx_bits != rx_bits)
-        BER = bit_errors / n_bits
-        print("BER: " + str(BER))
+        R = 50      #Transimpendance gain in ohms
+        thresholds_vol = np.arange(0.05, 0.85, 0.05)
+        thresholds_pw = (thresholds_vol ** 2 / R)
+        ber_list = []
 
-        #####=- Plotter -=#####
-        # Create figure for plots
-        plt.figure(figsize=(12, 9))
+        for th in thresholds_pw:
+            rx_bits_temp = (rx_signal[::self.R_f] > th).astype(int)
+            bit_errors_temp = np.sum(tx_bits != rx_bits_temp)
+            ber_temp = bit_errors_temp / n_bits
+            ber_list.append(ber_temp)
 
-        # Plot 1: Received signals
-        plt.subplot(3, 1, 1)
-        plt.step(t, tx_signal_loss, where='post', label="Attenuated signal", linewidth=2, alpha=0.7)
-        plt.step(t, rx_signal, where='post', label="Noisy signal: SNR = "+str(self.snr)+" dB", linewidth=1, alpha=0.7)
-        #plt.plot(t, rx_signal, label="Noisy signal", linewidth=1, alpha=0.7)
-        plt.scatter(t[::self.R_f], rx_signal[::self.R_f], label="Receiver sampling", s=15)
-        plt.step(t, np.repeat(rx_signal[::self.R_f], self.R_f), where='post', label="Received signal", linewidth=2, alpha=0.7)
-        plt.axhline(threshold, color='r', linestyle='dashed', label="Decision Threshold = "+str(round(threshold,4)))
-        plt.xlabel("Time [s]")
-        plt.ylabel("Power [W]")
-        plt.title("Attenuated, noisy and received signals")
-        plt.grid(True)
-        plt.legend()
+        # Optional: Plot BER vs Threshold
+        # plt.figure(figsize=(8, 5))
+        # plt.plot(thresholds_pw, ber_list, marker='o')
+        # plt.xlabel("Threshold [W]")
+        # plt.ylabel("BER")
+        # plt.title("BER vs Decision Threshold")
+        # plt.grid(True)
+        # plt.tight_layout()
+        # plt.show()
 
-        # Plot 2: Transmitted and received binary signals
-        plt.subplot(3, 1, 2)
-        plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
-        plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
-        plt.xlabel("Time [s]")
-        plt.ylabel("Power [W]")
-        plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(BER))
-        plt.grid(True)
-        plt.legend()
-
-        # Plot 3: Histogram of received signal
-        plt.subplot(3, 1, 3)
-        plt.hist(rx_signal[::self.R_f], bins=10, density=True, alpha=0.6, color='b', edgecolor='black')
-        plt.axvline(threshold, color='r', linestyle='dashed', label="Decision Threshold = "+str(round(threshold,4)))
-        plt.xlabel("Power [W]")
-        plt.ylabel("Probability density [-]")
-        plt.title("Histogram of received power")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-        # Number of bits you want to visualize clearly
-        n_bits_to_plot = 50
-        samples_to_plot = n_bits_to_plot * self.R_f
-
-        # Zoom in on a portion of the signal for visibility
-        # Plot 1: Received signals
-        plt.figure(figsize=(12, 9))
-        plt.subplot(3, 1, 1)
-        plt.step(t, tx_signal_loss, where='post', label="Attenuated signal", linewidth=2, alpha=0.7)
-        plt.step(t, rx_signal, where='post', label="Noisy signal: SNR = "+str(self.snr)+" dB", linewidth=1, alpha=0.7)
-        #plt.plot(t, rx_signal, label="Noisy signal", linewidth=1, alpha=0.7)
-        plt.scatter(t[::self.R_f], rx_signal[::self.R_f], label="Receiver sampling", s=15)
-        plt.step(t, np.repeat(rx_signal[::self.R_f], self.R_f), where='post', label="Received signal", linewidth=2, alpha=0.7)
-        plt.axhline(threshold, color='r', linestyle='dashed', label="Decision Threshold = "+str(round(threshold,4)))
-        plt.xlabel("Time [s]")
-        plt.ylabel("Power [W]")
-        plt.xlim([t[0], t[samples_to_plot]])
-        plt.title("Attenuated, noisy and received signals")
-        plt.grid(True)
-        plt.legend()
-
-        # Plot 2: Transmitted and received binary signals
-        plt.subplot(3, 1, 2)
-        plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
-        plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
-        plt.xlabel("Time [s]")
-        plt.ylabel("Power [W]")
-        plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(BER))
-        plt.xlim([t[0], t[samples_to_plot]])
-        plt.grid(True)
-        plt.legend()
-
-        # Show all plots
-        plt.tight_layout()
-        plt.show()
-        return
+        # print(f'BER: {ber_list}')
+        return ber_list
 
     def generate_time_sig_prbs(self):
         if self.random == False:

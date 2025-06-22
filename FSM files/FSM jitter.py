@@ -79,11 +79,11 @@ def white_noise_signal(mean, std, running_flag, queue, channel):
     global global_time_x, global_time_y
 
     # Define DAC limits
-    min_x1, min_x2 = 0x7FBC, 0xAFC8  # X limits (32700 - 45000)
-    min_y1, min_y2 = 0x5DC0, 0xA53C  # Y limits (24000 - 42300)
+    min_x1, min_x2 = 0x5942, 0xB2B6 # X limits (22850 - 45750)
+    min_y1, min_y2 = 0x5654, 0xABE0 # Y limits (22100 - 44000)
 
     # Detector center
-    offset_x = 0x8F5C                # (36700 prbs)
+    offset_x = 0x8E30                # (36400)
     offset_y = 0x81B0                # (33200)
 
     # Maximum Amplitude Ranges
