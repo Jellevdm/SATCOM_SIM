@@ -178,21 +178,6 @@ class Signal_simulation:
     def read_FSM(self, csv_file):
         df = pd.read_csv(csv_file, header=None).dropna().iloc[1:].astype(float)
         t, x_dac, y_dac = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
-        # plt.plot(t, x_dac, label="X-axis")
-        # plt.xlabel("Time [s]")
-        # plt.ylabel("Position [DAC Value]")
-        # plt.title("FSM input signal")
-        # plt.legend()
-        # plt.grid(True)
-        # plt.show()
-
-        # plt.plot(t, y_dac, label="Y-axis", color='orange')
-        # plt.xlabel("Time [s]")
-        # plt.ylabel("Position [DAC Value]")
-        # plt.title("FSM input signal")
-        # plt.legend()
-        # plt.grid(True)
-        # plt.show()
         return t, x_dac, y_dac
 
     def bits_2_pos(self, bits, bounds):
@@ -238,7 +223,7 @@ class Signal_simulation:
         return signal
 
     def pj_loss(self, x_f, y_f, lam, theta_div, n, res=100):
-        # Calculate the beam waist (w0) at the focus of the last lens (assuming beam is focused by lens to its waist) Detector 
+        # Calculate the beam waist (w0) at the focus of the last lens (assuming beam is focused by lens to its waist). Detector 
         # is positioned at the focal point of the last lens.
         w_0 = lam / (theta_div * np.pi * n)  # [m]
 
@@ -282,14 +267,12 @@ class Signal_simulation:
 
         # Return loss array reshaped to match input shape
         return np.array(losses).reshape(np.shape(x_f))
-
-
-    # Generate AWGN noise for given SNR
+    
     def gen_awgn(self, signal):
-        noise_power = 4.257362e-8       #Based on 4 mv noise floor with 1.495 mv rms voltage and 50 ohm transimpendance
-        noise_std = np.sqrt(noise_power)
+        mean = -0.5297e-3
+        std = 1.3598e-3
         num_samples = len(signal)
-        noise = np.random.normal(0, noise_std, num_samples)
+        noise = (np.random.normal(mean, std, num_samples)/3.8)
         return noise
     
     def generate_time_sig_square(self):
@@ -311,33 +294,57 @@ class Signal_simulation:
 
         L_tot = self.L_c * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal
-
+   
         # Add Gaussian noise (AWGN)
         awgn = self.gen_awgn(tx_signal_loss)
         rx_signal = (tx_signal_loss + awgn)
 
-        R = 50      #Transimpendance gain in ohms
-        thresholds_vol = np.arange(0.05, 0.85, 0.05)
-        thresholds_pw = (thresholds_vol ** 2 / R)
+        thresholds_pw = (np.arange(0.05, 0.85, 0.05)/3.8)*self.P_l
         ber_list = []
 
         for th in thresholds_pw:
-            rx_bits_temp = (rx_signal[::self.R_f] > th).astype(int)
-            bit_errors_temp = np.sum(tx_bits != rx_bits_temp)
-            ber_temp = bit_errors_temp / n_bits
+            rx_bits = (rx_signal[::self.R_f] > th).astype(int)
+            bit_errors = np.sum(tx_bits != rx_bits)
+            ber_temp = bit_errors / n_bits
             ber_list.append(ber_temp)
 
-        # Optional: Plot BER vs Threshold
-        # plt.figure(figsize=(8, 5))
-        # plt.plot(thresholds_pw, ber_list, marker='o')
-        # plt.xlabel("Threshold [W]")
-        # plt.ylabel("BER")
-        # plt.title("BER vs Decision Threshold")
-        # plt.grid(True)
-        # plt.tight_layout()
-        # plt.show()
+        #####=- Plotter -=#####
+        # Create figure for plots
+        plt.figure(figsize=(12, 9))
 
-        # print(f'BER: {ber_list}')
+        # Plot 1: Received signals
+        plt.subplot(3, 1, 1)
+        plt.step(t, tx_signal_loss, where='post', label="Attenuated signal", linewidth=2, alpha=0.7)
+        plt.step(t, rx_signal, where='post', label="Noisy signal", linewidth=1, alpha=0.7)
+        plt.scatter(t[::self.R_f], rx_signal[::self.R_f], label="Receiver sampling", s=15)
+        plt.step(t, np.repeat(rx_signal[::self.R_f], self.R_f), where='post', label="Received signal", linewidth=2, alpha=0.7)
+        plt.axhline(thresholds_pw[0], color='r', linestyle='dashed', label="Decision Threshold = "+str(round(thresholds_pw[0],4)))
+        plt.xlabel("Time [s]")
+        plt.ylabel("Power [W]")
+        plt.title("Attenuated, noisy and received signals")
+        plt.grid(True)
+        plt.legend()
+
+        # Plot 2: Transmitted and received binary signals
+        plt.subplot(3, 1, 2)
+        plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
+        plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
+        plt.xlabel("Time [s]")
+        plt.ylabel("Voltage [V]")
+        plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(ber_temp))
+        plt.grid(True)
+        plt.legend()
+
+        # Plot 3: Histogram of received signal
+        plt.subplot(3, 1, 3)
+        plt.hist(rx_signal[::self.R_f], bins=1000, density=True, alpha=0.6, color='b', edgecolor='black')
+        plt.axhline(thresholds_pw[0], color='r', linestyle='dashed', label="Decision Threshold = "+str(round(thresholds_pw[0],4)))
+        plt.xlabel("Power [W]")
+        plt.ylabel("Probability density [-]")
+        plt.title("Histogram of received power")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
         return ber_list
 
     def generate_time_sig_prbs(self):
@@ -352,10 +359,6 @@ class Signal_simulation:
         tx_signal = np.multiply(np.repeat(tx_bits, self.R_f), self.P_l)  # Transmitted signal
         t = np.linspace(0, t_fsm[-1], len(tx_signal))  # Time steps
 
-        # Attenuate signal: include losses
-        # Pointing jitter loss [dB]
-        # Losses
-
         # Interpolate FSM positions over the higher-resolution time vector
         t_fsm_interp = np.linspace(0, t_fsm[-1], len(tx_signal))  # match full signal length
         x_raw = self.bits_2_pos(x_dac, bounds=[22850, 36400, 45750])
@@ -363,7 +366,6 @@ class Signal_simulation:
         x = np.interp(t_fsm_interp, t_fsm, x_raw)
         y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
-        # x_f, y_f = self.butt_filt(self.fs, self.fc, x, y) removed butterworth filter
         L_pj = self.pj_loss(x, y, self.lam, self.theta_div, self.n)
         L_tot = self.L_c * L_pj  # Total loss [-]
         tx_signal_loss = L_tot * tx_signal

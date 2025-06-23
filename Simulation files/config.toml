@@ -3,12 +3,11 @@
 # The code not yet supports empty variables
 
 [inputs_design]
-Tx_power = 2                                                     # Transmit laser power (W)
+Tx_power = 10e-3                                                     # Transmit laser power (W)
 theta_div = 11.970e-3                                                # Beam divergence angle (radians)
 sigma_pj = 2.394e-3                                                  # Pointing jitter (radians)
-optics_array = [0.9983, 0.4467, 0.9247, 
-                0.9486, 0.9486, 0.3949,
-                0.9486, 0.924]                                      # Optical efficiency array
+optics_array = [0.9247, 0.9486, 0.9486, 0.3949,
+                0.9486, 0.9247]                                      # Optical efficiency array
 Dr = 2e-4                                                           # Receiver diameter (m)
 wave = 1.55e-6                                                      # Wavelength (m)
 V = 50                                                              # Visibility (km)
