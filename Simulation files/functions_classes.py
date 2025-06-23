@@ -275,7 +275,7 @@ class Signal_simulation:
         noise = (np.random.normal(mean, std, num_samples)/3.8)
         return noise
     
-    def generate_time_sig_square(self):
+    def generate_time_sig_square(self, sigma, mean):
         t_fsm, x_dac, y_dac = self.read_FSM(self.csv_file)
 
         n_bits = self.bitrate * int(t_fsm[-1])
@@ -302,49 +302,56 @@ class Signal_simulation:
         thresholds_pw = (np.arange(0.05, 0.85, 0.05)/3.8)*self.P_l
         ber_list = []
 
-        for th in thresholds_pw:
-            rx_bits = (rx_signal[::self.R_f] > th).astype(int)
+        for th in range(len(thresholds_pw)):
+            rx_bits = (rx_signal[::self.R_f] > thresholds_pw[th]).astype(int)
             bit_errors = np.sum(tx_bits != rx_bits)
             ber_temp = bit_errors / n_bits
             ber_list.append(ber_temp)
 
-        #####=- Plotter -=#####
-        # Create figure for plots
-        plt.figure(figsize=(12, 9))
+            n_bits_to_plot = 100
+            samples_to_plot = n_bits_to_plot * self.R_f
 
-        # Plot 1: Received signals
-        plt.subplot(3, 1, 1)
-        plt.step(t, tx_signal_loss, where='post', label="Attenuated signal", linewidth=2, alpha=0.7)
-        plt.step(t, rx_signal, where='post', label="Noisy signal", linewidth=1, alpha=0.7)
-        plt.scatter(t[::self.R_f], rx_signal[::self.R_f], label="Receiver sampling", s=15)
-        plt.step(t, np.repeat(rx_signal[::self.R_f], self.R_f), where='post', label="Received signal", linewidth=2, alpha=0.7)
-        plt.axhline(thresholds_pw[0], color='r', linestyle='dashed', label="Decision Threshold = "+str(round(thresholds_pw[0],4)))
-        plt.xlabel("Time [s]")
-        plt.ylabel("Power [W]")
-        plt.title("Attenuated, noisy and received signals")
-        plt.grid(True)
-        plt.legend()
+            #####=- Plotter -=#####
+            # Create figure for plots
+            plt.figure(figsize=(12, 9))
 
-        # Plot 2: Transmitted and received binary signals
-        plt.subplot(3, 1, 2)
-        plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
-        plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
-        plt.xlabel("Time [s]")
-        plt.ylabel("Voltage [V]")
-        plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(ber_temp))
-        plt.grid(True)
-        plt.legend()
+            # Plot 1: Received signals
+            plt.subplot(3, 1, 1)
+            plt.step(t, tx_signal_loss, where='post', label="Tx: Attenuated transmitted signal", linewidth=2, alpha=0.7)
+            plt.step(t, np.repeat(rx_signal[::self.R_f], self.R_f), where='post', label="Rx: Received signal + detector noise", linewidth=2, alpha=0.7)
+            plt.axhline(thresholds_pw[th], color='r', linestyle='dashed', label="Decision Threshold : "+str(round(thresholds_pw[th],7)))
+            plt.xlabel("Time [s]")
+            plt.ylabel("Power [W]")
+            plt.xlim([t[0], t[samples_to_plot]])
+            plt.title(f"Simulated Square Wave signal: σ={sigma}, μ={mean}, th={round(thresholds_pw[th],7)}")
+            plt.grid(True)
+            plt.legend()
 
-        # Plot 3: Histogram of received signal
-        plt.subplot(3, 1, 3)
-        plt.hist(rx_signal[::self.R_f], bins=1000, density=True, alpha=0.6, color='b', edgecolor='black')
-        plt.axhline(thresholds_pw[0], color='r', linestyle='dashed', label="Decision Threshold = "+str(round(thresholds_pw[0],4)))
-        plt.xlabel("Power [W]")
-        plt.ylabel("Probability density [-]")
-        plt.title("Histogram of received power")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+            # Plot 2: Transmitted and received binary signals
+            plt.subplot(3, 1, 2)
+            plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
+            plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
+            plt.xlabel("Time [s]")
+            plt.ylabel("[-]")
+            plt.xlim([t[0], t[samples_to_plot]])
+            plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(round(ber_temp, 4)))
+            plt.grid(True)
+            plt.legend()
+
+            # Plot 3: Histogram of received signal
+            plt.subplot(3, 1, 3)
+            plt.hist(rx_signal, bins=1000, density=True, alpha=0.6, color='b', edgecolor='black')
+            plt.axvline(thresholds_pw[th], color='r', linestyle='dashed', label="Decision Threshold = "+str(round(thresholds_pw[th],4)))
+            plt.xlabel("Power [W]")
+            plt.ylabel("Probability density [-]")
+            plt.title("Histogram of received power")
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout(pad=3.0, h_pad=2.5, w_pad=2.0)
+
+            plt.savefig(f"Sim_analysis_output/signal_sigma_{sigma}_mean_{mean}_thresh_{thresholds_pw[th]}.png")  # or any naming scheme
+            print(f"Plot saved for σ={sigma}, μ={mean}, th={thresholds_pw[th]}")
+            plt.close()
         return ber_list
 
     def generate_time_sig_prbs(self):
