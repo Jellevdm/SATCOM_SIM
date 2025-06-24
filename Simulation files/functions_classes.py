@@ -175,8 +175,8 @@ class Signal_simulation:
 
     def read_FSM(self, csv_file):
         df = pd.read_csv(csv_file, header=None).dropna().iloc[1:].astype(float)
-        t, x_bit, y_bit = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
-        plt.plot(t, x_bit, label="X-axis")
+        t, x_dac, y_dac = np.array(df[0].tolist()), np.array(df[1].tolist()), np.array(df[2].tolist())
+        plt.plot(t, x_dac, label="X-axis")
         plt.xlabel("Time [s]")
         plt.ylabel("Position [DAC Value]")
         plt.title("FSM input signal")
@@ -184,14 +184,14 @@ class Signal_simulation:
         plt.grid(True)
         plt.show()
 
-        plt.plot(t, y_bit, label="Y-axis", color='orange')
+        plt.plot(t, y_dac, label="Y-axis", color='orange')
         plt.xlabel("Time [s]")
         plt.ylabel("Position [DAC Value]")
         plt.title("FSM input signal")
         plt.legend()
         plt.grid(True)
         plt.show()
-        return t, x_bit, y_bit
+        return t, x_dac, y_dac
 
     def bits_2_pos(self, bits, bounds):
         pos = bits.copy()
@@ -236,35 +236,51 @@ class Signal_simulation:
         return signal
 
     def pj_loss(self, x_f, y_f, lam, theta_div, n, res=100):
-        w_0 = lam / (theta_div * np.pi * n)
-    
+        # Calculate the beam waist (w0) at the focus (assuming beam is focused by lens to its waist)
+        w_0 = lam / (theta_div * np.pi * n)  # [m]
+
+        # Define a 2D Gaussian beam intensity profile centered at (0,0)
         def gauss_beam(x, y):
-            r = np.sqrt(x ** 2 + y ** 2)
-            return (w_0 / self.w_beam) ** 2 * np.exp(-2 * r ** 2 / self.w_beam ** 2)
+            r = np.sqrt(x ** 2 + y ** 2)  # radial distance from beam center
+            return np.exp(-2 * r ** 2 / w_0 ** 2)  # normalized Gaussian intensity
 
-        R_det = self.Dr / 2
-        dx = dy = None
+        R_det = self.Dr / 2  # Radius of circular detector [m]
+        dx = dy = None  # Spatial resolution elements for integration
 
-        losses = []
+        losses = []  # Store loss values for each FSM position
 
+        # Loop over all FSM x/y positions
         for x_f_i, y_f_i in zip(np.ravel(x_f), np.ravel(y_f)):
+            # Define grid over area of detector centered at FSM position
             x_grid = np.linspace(x_f_i - R_det, x_f_i + R_det, res)
             y_grid = np.linspace(y_f_i - R_det, y_f_i + R_det, res)
-            X, Y = np.meshgrid(x_grid, y_grid)
+            X, Y = np.meshgrid(x_grid, y_grid)  # Create 2D meshgrid
 
+            # Compute dx, dy (only once, assuming uniform grid)
             if dx is None:
                 dx = x_grid[1] - x_grid[0]
                 dy = y_grid[1] - y_grid[0]
 
-            mask = (X - x_f_i) ** 2 + (Y - y_f_i) ** 2 <= R_det ** 2
-            intensity = gauss_beam(X, Y)
-            captured_power = np.sum(intensity[mask]) * dx * dy
-            total_power = (np.pi * w_0**2) / 2
-            L_pj = captured_power / total_power
+            # Shift coordinates so that the Gaussian beam is centered at (x_f_i, y_f_i)
+            intensity = gauss_beam(X - x_f_i, Y - y_f_i)
 
+            # Apply circular mask for detector aperture (still centered at original detector center)
+            mask = X**2 + Y**2 <= R_det ** 2
+
+            # Integrate beam intensity over the detector aperture (captured power)
+            captured_power = np.sum(intensity[mask]) * dx * dy
+
+            # Total power of a 2D Gaussian beam (analytical)
+            total_power = (np.pi * w_0**2) / 2
+
+            # Compute fraction of power captured = "pointing loss" or link efficiency
+            L_pj = captured_power / total_power
             losses.append(L_pj)
 
+        # Return loss array reshaped to match input shape
         return np.array(losses).reshape(np.shape(x_f))
+
+
 
     # Generate AWGN noise for given SNR
     #TODO: change AWGN to constant noise floor of the detector
@@ -276,7 +292,7 @@ class Signal_simulation:
         return noise
     
     def generate_time_sig_square(self):
-        t_fsm, x_bits, y_bits = self.read_FSM(self.csv_file)
+        t_fsm, x_dac, y_dac = self.read_FSM(self.csv_file)
 
         n_bits = self.bitrate * int(t_fsm[-1])
         tx_bits = self.gen_square(n_bits)  # Square wave generator
@@ -285,12 +301,13 @@ class Signal_simulation:
 
         # Interpolate FSM positions over the higher-resolution time vector
         t_fsm_interp = np.linspace(0, t_fsm[-1], len(tx_signal))  # match full signal length
-        x_raw = self.bits_2_pos(x_bits, bounds=[22850, 36400, 45750])
-        y_raw = self.bits_2_pos(y_bits, bounds=[22100, 33200, 44000])
+        x_raw = self.bits_2_pos(x_dac, bounds=[22850, 36400, 45750])
+        y_raw = self.bits_2_pos(y_dac, bounds=[22100, 33200, 44000])
         x = np.interp(t_fsm_interp, t_fsm, x_raw)
         y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
         L_pj = self.pj_loss(x, y, self.lam, self.theta_div, self.n)
+
         #TODO: change correct losses
         # L_tot = self.L_c * L_pj  # Total loss [-]
         L_tot = 1 * L_pj
@@ -332,7 +349,7 @@ class Signal_simulation:
         plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
         plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
         plt.xlabel("Time [s]")
-        plt.ylabel("Voltage [V]")
+        plt.ylabel("Power [W]")
         plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(BER))
         plt.grid(True)
         plt.legend()
@@ -374,7 +391,7 @@ class Signal_simulation:
         plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
         plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
         plt.xlabel("Time [s]")
-        plt.ylabel("Voltage [V]")
+        plt.ylabel("Power [W]")
         plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(BER))
         plt.xlim([t[0], t[samples_to_plot]])
         plt.grid(True)
@@ -389,7 +406,7 @@ class Signal_simulation:
         if self.random == False:
             np.random.seed(0)
 
-        t_fsm, x_bits, y_bits = self.read_FSM(self.csv_file)
+        t_fsm, x_dac, y_dac = self.read_FSM(self.csv_file)
 
         # Generate PRBS transmitter signal
         n_bits = self.bitrate * int(t_fsm[-1])
@@ -403,8 +420,8 @@ class Signal_simulation:
 
         # Interpolate FSM positions over the higher-resolution time vector
         t_fsm_interp = np.linspace(0, t_fsm[-1], len(tx_signal))  # match full signal length
-        x_raw = self.bits_2_pos(x_bits, bounds=[22850, 36400, 45750])
-        y_raw = self.bits_2_pos(y_bits, bounds=[22100, 33200, 44000])
+        x_raw = self.bits_2_pos(x_dac, bounds=[22850, 36400, 45750])
+        y_raw = self.bits_2_pos(y_dac, bounds=[22100, 33200, 44000])
         x = np.interp(t_fsm_interp, t_fsm, x_raw)
         y = np.interp(t_fsm_interp, t_fsm, y_raw)
 
