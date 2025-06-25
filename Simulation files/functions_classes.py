@@ -319,11 +319,11 @@ class Signal_simulation:
             plt.subplot(3, 1, 1)
             plt.step(t, tx_signal_loss, where='post', label="Tx: Attenuated transmitted signal", linewidth=2, alpha=0.7)
             plt.step(t, np.repeat(rx_signal[::self.R_f], self.R_f), where='post', label="Rx: Received signal + detector noise", linewidth=2, alpha=0.7)
-            plt.axhline(thresholds_pw[th], color='r', linestyle='dashed', label="Decision Threshold : "+str(round((thresholds_pw[th]/self.P_l)*3.8,3)))
+            plt.axhline(thresholds_pw[th], color='r', linestyle='dashed', label=f"Decision Threshold = {round((thresholds_pw[th]/self.P_l)*3.8,3)} Voltage [V]")
             plt.xlabel("Time [s]")
             plt.ylabel("Power [W]")
             plt.xlim([t[0], t[samples_to_plot]])
-            plt.title(f"Simulated Square Wave signal: σ={sigma}, μ={mean}, th={round((thresholds_pw[th]/self.P_l)*3.8,3)}")
+            plt.title(f"Simulated Square Wave signal: σ={sigma}, μ={mean}, th={round((thresholds_pw[th]/self.P_l)*3.8,3), 'Voltage [V]'}")
             plt.grid(True)
             plt.legend()
 
@@ -341,7 +341,7 @@ class Signal_simulation:
             # Plot 3: Histogram of received signal
             plt.subplot(3, 1, 3)
             plt.hist(rx_signal, bins=1000, density=True, alpha=0.6, color='b', edgecolor='black')
-            plt.axvline(thresholds_pw[th], color='r', linestyle='dashed', label="Decision Threshold = "+str(round((thresholds_pw[th]/self.P_l)*3.8,3)))
+            plt.axvline(thresholds_pw[th], color='r', linestyle='dashed', label=f"Decision Threshold = {round((thresholds_pw[th]/self.P_l)*3.8,3)} Voltage [V]")
             plt.xlabel("Power [W]")
             plt.ylabel("Probability density [-]")
             plt.title("Histogram of received power")
