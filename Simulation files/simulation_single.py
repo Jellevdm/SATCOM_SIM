@@ -28,7 +28,7 @@ link_budget_des = optical_link_design.compute_link_budget()
 # #-----------------------------------------------
 L_c = 10 ** (link_budget_des["Total losses const [db]"] / 10)
 signal_sim = Signal_simulation(config, file_name, "inputs_design", "inputs_signal", L_c)     # Initialse time signal simulation class    
-# result_sim1 = signal_sim.generate_time_sig_square(std, mean)
+result_sim1 = signal_sim.generate_time_sig_square(std, mean)
 x = signal_sim.pdf2ber_plot(0.1, 0.5)
 
 
