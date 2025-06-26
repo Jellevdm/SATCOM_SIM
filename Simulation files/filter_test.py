@@ -1,157 +1,76 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy.signal as signal
-import pandas as pd
+        
+        #####=- Plotter -=#####
+        # Create figure for plots
+        plt.figure(figsize=(16, 9))
 
-file_name = "SATCOM_SIM/Simulation files/FSM inputs/04-03-inputs/04_03-testing-std(0.1)-mean(0).csv"
+        # Plot 1: Received signals
+        plt.subplot(3, 1, 1)
+        plt.step(t, tx_signal_loss, where='post', label="Attenuated signal", linewidth=2, alpha=0.7)
+        plt.step(t, rx_signal, where='post', label="Noisy signal: SNR = "+str(self.snr)+" dB", linewidth=1, alpha=0.7)
+        #plt.plot(t, rx_signal, label="Noisy signal", linewidth=1, alpha=0.7)
+        plt.scatter(t[::self.R_f], rx_signal[::self.R_f], label="Receiver sampling", s=15)
+        plt.step(t, np.repeat(rx_signal[::self.R_f], self.R_f), where='post', label="Received signal", linewidth=2, alpha=0.7)
+        plt.axhline(threshold, color='r', linestyle='dashed', label="Decision Threshold = "+str(round(threshold,4)))
+        plt.xlabel("Time [s]")
+        plt.ylabel("Power [W]")
+        plt.title("Attenuated, noisy and received signals")
+        plt.grid(True)
+        plt.legend()
 
-df = pd.read_csv(file_name)
-time = df["Time"].to_numpy()
-x_values = df["X Value"].to_numpy()
-y_values = df["Y Value"].to_numpy()
-plt.plot(time, x_values, label='x input to fsm')
-plt.plot(time, y_values, label='yinput to fsm')
-plt.xlabel(f'Approximate Time [s]')
-plt.ylabel(f'FSM DAC value')
-plt.legend()
-plt.grid()
-plt.show()
+        # Plot 2: Transmitted and received binary signals
+        plt.subplot(3, 1, 2)
+        plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
+        plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
+        plt.xlabel("Time [s]")
+        plt.ylabel("Power [W]")
+        plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(BER))
+        plt.grid(True)
+        plt.legend()
 
-# Sampling frequency and cutoff frequency
-fs = 1000  # Hz
-fc = 100   # Hz (Cutoff frequency)
+        # Plot 3: Histogram of received signal
+        plt.subplot(3, 1, 3)
+        plt.hist(rx_signal[::self.R_f], bins=10, density=True, alpha=0.6, color='b', edgecolor='black')
+        plt.axvline(threshold, color='r', linestyle='dashed', label="Decision Threshold = "+str(round(threshold,4)))
+        plt.xlabel("Power [W]")
+        plt.ylabel("Probability density [-]")
+        plt.title("Histogram of received power")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout(pad=2.0, h_pad=2.5, w_pad=2.0)
+        plt.show()
 
-def sample_xy(std, la, len, seed):
-        np.random.seed(seed)
-        theta_x = np.random.normal(0, std, len)
-        theta_y = np.random.normal(0, std, len)
-        x = np.tan(theta_x) * la
-        y = np.tan(theta_y) * la
-        return x, y
+        # Number of bits you want to visualize clearly
+        n_bits_to_plot = 50
+        samples_to_plot = n_bits_to_plot * self.R_f
 
-def butt_filt(fs, fc, x, y):
-    # FILTER #
-    # Normalize frequency
-    Wn = fc / (fs / 2)  # Normalize by Nyquist frequency
-    # Design a second-order Butterworth filter
-    b, a = signal.butter(N=2, Wn=Wn, btype='low', analog=False, output='ba')
-    # Apply filter
-    x_f = signal.lfilter(b, a, x)
-    y_f = signal.lfilter(b, a, y)
-    w, h = signal.freqz(b, a, worN=1024)  # Compute frequency response
-    frequencies = w * fs / (2 * np.pi)  # Convert to Hz
-    return x_f, y_f, frequencies, h
+        # Zoom in on a portion of the signal for visibility
+        # Plot 1: Received signals
+        plt.figure(figsize=(12, 9))
+        plt.subplot(3, 1, 1)
+        plt.step(t, tx_signal_loss, where='post', label="Attenuated signal", linewidth=2, alpha=0.7)
+        plt.step(t, rx_signal, where='post', label="Noisy signal: SNR = "+str(self.snr)+" dB", linewidth=1, alpha=0.7)
+        #plt.plot(t, rx_signal, label="Noisy signal", linewidth=1, alpha=0.7)
+        plt.scatter(t[::self.R_f], rx_signal[::self.R_f], label="Receiver sampling", s=15)
+        plt.step(t, np.repeat(rx_signal[::self.R_f], self.R_f), where='post', label="Received signal", linewidth=2, alpha=0.7)
+        plt.axhline(threshold, color='r', linestyle='dashed', label="Decision Threshold = "+str(round(threshold,4)))
+        plt.xlabel("Time [s]")
+        plt.ylabel("Power [W]")
+        plt.xlim([t[0], t[samples_to_plot]])
+        plt.title("Attenuated, noisy and received signals")
+        plt.grid(True)
+        plt.legend()
 
-def intensity_function(x_f, y_f, lam, theta_div, n, z):
-    # Substitute in intensity function
-    r = np.sqrt(x_f ** 2 + y_f ** 2)
-    w_0 = lam / (theta_div * np.pi * n)
-    z_R = np.pi * w_0 ** 2 * n / lam
-    w = w_0 * np.sqrt(1 + (z / z_R) ** 2)
-    L_pj = (w_0 / w) ** 2 * np.exp(-2 * r ** 2 / w ** 2)
-    return L_pj
+        # Plot 2: Transmitted and received binary signals
+        plt.subplot(3, 1, 2)
+        plt.step(t, np.repeat(tx_bits, self.R_f), where='post', label="Transmitted binary signal", linewidth=3, alpha=0.7)
+        plt.step(t, np.repeat(rx_bits, self.R_f), where='post', label="Received binary signal", linewidth=3, alpha=0.7)
+        plt.xlabel("Time [s]")
+        plt.ylabel("Power [W]")
+        plt.title("Transmitted and received binary signals: bitrate = "+str(self.bitrate)+str(" bps")+", BER = "+str(BER))
+        plt.xlim([t[0], t[samples_to_plot]])
+        plt.grid(True)
+        plt.legend()
 
-#input
-sigma_pj = 2e-3 #pointing jitter
-la = 50      # link length
-t_end = 10  #time to simulate
-t = np.linspace(0, t_end, 10000)  
-
-#noise
-array = sample_xy(sigma_pj, la, len(t), 0)
-x = array[0]
-y = array[1]
-# print(x)
-# print(y)
-
-#filtered noise
-array_f = butt_filt(fs, fc, x_values, y_values)
-frequencies = array_f[2]
-x_f = array_f[0]
-y_f =array_f[1]
-
-# Plot both time-domain and frequency response
-plt.figure(figsize=(12, 6))
-
-# Subplot 2: Frequency Response
-plt.plot(frequencies, 20 * np.log10(abs(array_f[3])), 'b')  # Convert magnitude to dB
-plt.axvline(fc, color='r', linestyle='--', label=f'Cutoff Frequency ({fc} Hz)')
-plt.xlabel("Frequency [Hz]")
-plt.ylabel("Magnitude [dB]")
-plt.xscale('log')
-plt.title("Frequency Response of Butterworth Filter")
-plt.legend()
-plt.grid()
-
-plt.tight_layout()
-plt.show()
-
-# Subplot 1: Time Domain Signal x
-plt.subplot(2, 1, 1)
-plt.plot(time, x_values, label='Original Signal')
-plt.plot(time, x_f, label='Filtered Signal', linewidth=2)
-plt.legend()
-plt.xlabel("Time [seconds]")
-plt.ylabel("Amplitude - x")
-plt.title("Time Domain: Original vs. Filtered Signal")
-plt.grid()
-
-# Subplot 2: Time domain signal y
-plt.subplot(2, 1, 2)
-plt.plot(time, y_values, label='Original Signal')
-plt.plot(time, y_f, label='Filtered Signal', linewidth=2)
-plt.legend()
-plt.xlabel("Time [seconds]")
-plt.ylabel("Amplitude - y")
-plt.title("Time Domain: Original vs. Filtered Signal")
-plt.grid()
-plt.show()
-
-plt.figure(figsize=(8, 6))
-
-# Plot original and filtered trajectories
-plt.plot(x_values, y_values, label="Original Path", alpha=0.6)
-plt.plot(x_f, y_f, label="Filtered Path", linestyle="--", linewidth=2)
-
-# Mark start and end points
-plt.scatter(x[0], y[0], color='g', label="Start", marker='o', s=100)
-plt.scatter(x[-1], y[-1], color='r', label="End", marker='x', s=100)
-
-plt.xlabel("X Position")
-plt.ylabel("Y Position")
-plt.title("Trajectory of x-y Coordinates Over Time")
-plt.legend()
-plt.grid()
-plt.axis("equal")  # Ensures equal scaling of x and y axes
-plt.show()
-
-# # Normalize frequency
-# Wn = fc / (fs / 2)  # Normalize by Nyquist frequency
-
-# # Design a second-order Butterworth filter
-# b, a = signal.butter(N=2, Wn=Wn, btype='low', analog=False, output='ba')
-
-# Create a test signal (10 Hz sine wave + 100 Hz noise)
-t = np.linspace(0, 1, fs, endpoint=False)                           # Time vector
-x = np.sin(2 * np.pi * 10 * t) + 0.5 * np.sin(2 * np.pi * 120 * t)  # Signal with noise
-
-# # # Apply the filter
-# # y = signal.lfilter(b, a, x)
-
-# # Compute Frequency Response
-# w, h = signal.freqz(b, a, worN=1024)  # Compute frequency response
-# frequencies = w * fs / (2 * np.pi)  # Convert to Hz
-
-# Plot both time-domain and frequency response
-plt.figure(figsize=(12, 6))
-
-# Subplot 1: Time Domain Signal
-plt.subplot(2, 1, 1)
-plt.plot(t, x, label='Original Signal')
-plt.plot(t, y, label='Filtered Signal', linewidth=2)
-plt.legend()
-plt.xlabel("Time [seconds]")
-plt.ylabel("Amplitude")
-plt.title("Time Domain: Original vs. Filtered Signal")
-plt.grid()
-plt.show()
+        # Show all plots
+        plt.tight_layout(pad=3.0, h_pad=2.5, w_pad=2.0)
+        plt.show()
